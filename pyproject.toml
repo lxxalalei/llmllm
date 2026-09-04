@@ -20,6 +20,7 @@ dependencies = [
   "tree-sitter>=0.24,<1",
   "tree-sitter-python>=0.23,<1",
   "tree-sitter-go>=0.23,<1",
+  "PyYAML>=6,<7",
 ]
 
 [project.optional-dependencies]

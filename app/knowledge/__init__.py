@@ -1,3 +1,4 @@
+from app.knowledge.assets import KnowledgeCatalog, load_knowledge_file
 from app.knowledge.models import (
     KnowledgeItem,
     KnowledgeLayer,
@@ -9,6 +10,7 @@ from app.knowledge.models import (
 )
 
 __all__ = [
+    "KnowledgeCatalog",
     "KnowledgeItem",
     "KnowledgeLayer",
     "KnowledgeRelation",
@@ -16,4 +18,5 @@ __all__ = [
     "RelationType",
     "SourceBinding",
     "UserRole",
+    "load_knowledge_file",
 ]
