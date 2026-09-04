@@ -7,6 +7,7 @@
 - [产品需求文档 PRD](docs/PRD.md)
 - [系统架构](docs/architecture.md)
 - [实施路线图](docs/roadmap.md)
+- [开发计划约定](docs/plans/README.md)
 
 ## 核心模型
 
