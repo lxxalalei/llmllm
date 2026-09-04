@@ -23,3 +23,28 @@ def test_compiler_pipeline_order() -> None:
         "l4_generated",
     ]
     assert result["artifacts"] == ["L1", "L2", "L3", "L4"]
+
+
+def test_compiler_analyzes_go_source_content() -> None:
+    graph = build_compiler_graph()
+    result = asyncio.run(
+        graph.ainvoke(
+            {
+                "source": "server/channels/app/channel.go",
+                "content": """
+package app
+
+func (a *App) CreateChannelWithUser() {}
+func (a *App) CreateChannel() {}
+""".strip(),
+                "events": [],
+                "artifacts": [],
+            }
+        )
+    )
+
+    assert result["language"] == "go"
+    assert [symbol["name"] for symbol in result["symbols"]] == [
+        "CreateChannelWithUser",
+        "CreateChannel",
+    ]

@@ -8,10 +8,14 @@ router = APIRouter()
 
 class CompilerPreviewRequest(BaseModel):
     source: str
+    language: str | None = None
+    content: str | None = None
 
 
 class CompilerPreviewResponse(BaseModel):
     source: str
+    language: str | None = None
+    symbols: list[dict[str, object]]
     events: list[str]
     artifacts: list[str]
 
@@ -19,15 +23,21 @@ class CompilerPreviewResponse(BaseModel):
 @router.post("/preview", response_model=CompilerPreviewResponse)
 async def compiler_preview(payload: CompilerPreviewRequest) -> CompilerPreviewResponse:
     graph = build_compiler_graph()
-    result = await graph.ainvoke(
-        {
-            "source": payload.source,
-            "events": [],
-            "artifacts": [],
-        }
-    )
+    state: dict[str, object] = {
+        "source": payload.source,
+        "events": [],
+        "artifacts": [],
+    }
+    if payload.language is not None:
+        state["language"] = payload.language
+    if payload.content is not None:
+        state["content"] = payload.content
+
+    result = await graph.ainvoke(state)
     return CompilerPreviewResponse(
         source=result["source"],
+        language=result.get("language"),
+        symbols=result.get("symbols", []),
         events=result["events"],
         artifacts=result["artifacts"],
     )
