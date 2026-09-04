@@ -54,6 +54,15 @@ class KnowledgeCatalog:
         return sources
 
 
+def _markdown_title(body: str, file_path: Path) -> str:
+    for line in body.splitlines():
+        if line.startswith("# "):
+            title = line[2:].strip()
+            if title:
+                return title
+    raise ValueError(f"knowledge file has no title field or Markdown H1: {file_path}")
+
+
 def load_knowledge_file(path: str | Path) -> KnowledgeItem:
     file_path = Path(path)
     text = file_path.read_text(encoding="utf-8")
@@ -69,4 +78,6 @@ def load_knowledge_file(path: str | Path) -> KnowledgeItem:
     if not isinstance(metadata, dict):
         raise ValueError(f"knowledge frontmatter must be a mapping: {file_path}")
 
-    return KnowledgeItem.model_validate({**metadata, "content": body.strip()})
+    body = body.strip()
+    title = metadata.get("title") or _markdown_title(body, file_path)
+    return KnowledgeItem.model_validate({**metadata, "title": title, "content": body})
