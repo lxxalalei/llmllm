@@ -5,10 +5,11 @@
 ## 当前路线
 
 - 当前主路线：`Phase 1 — 单模块纵向验证`
-- 路线状态：`blocked`
+- 路线状态：`in_progress`
 - 当前里程碑：`M1 — 冻结真实业务模块输入`
-- 下一验收项：明确一个可在本地读取和验证的真实业务模块，记录其仓库与 ref、模块边界、入口文件、业务负责人/审核人，以及可执行的基线测试。未满足前不得用仓库内示例资产冒充真实纵向验证。
-- 当前阻塞：尚未提供真实业务模块及其可访问代码；这不影响继续维护 Phase 0 骨架，但阻止 Phase 1 业务闭环验收。
+- 当前样本：Mattermost `Channel Creation`（频道创建）
+- 下一验收项：将 Mattermost 固定 ref 的频道创建源码接入 `llmllm`，验证 Go 代码读取/解析边界，并执行频道创建基线测试或记录其环境依赖；完成后进入 M2 的真实 `Code → L1` 生成。
+- 当前阻塞：无。若 Mattermost 基线测试依赖数据库或其他服务，则作为 M1 的环境依赖记录，不扩大首个功能范围。
 
 路线状态只使用：
 
@@ -38,9 +39,25 @@
 - 能证明：健康接口、确定性编译骨架顺序和 Python 顶层符号解析测试通过。
 - 未覆盖：Docker Compose、PostgreSQL、Qdrant、真实业务模块和端到端用户链路。
 
-## Phase 1 — 单模块纵向验证 (`blocked`)
+## Phase 1 — 单模块纵向验证 (`in_progress`)
 
-选择一个真实业务模块：
+### 已选真实样本
+
+- 上游仓库：`mattermost/mattermost`
+- 上游默认分支：`master`
+- 固定 ref：`43b2ae87e06b06abe01f9382ec26899c54c31728`
+- 首个功能边界：`Channel Creation`（公开/私有频道创建，不扩展到 Direct/Group Channel、频道归档、搜索或完整 Channel 生命周期）
+- 主要业务入口：`server/channels/app/channel.go`
+  - `CreateChannelWithUser`
+  - `CreateChannel`
+- API 入口：`server/channels/api4/channel.go`
+- 主要测试证据：
+  - `server/channels/api4/channel_test.go`
+  - `server/channels/app/channel_test.go`
+- 产品规则审核责任：`llmllm` 项目负责人；代码事实以固定 ref 的 Mattermost 源码与测试为准。
+- 有界实施计划：[Mattermost Channel Creation 纵向验证](plans/mattermost-channel-creation.md)
+
+目标产物：
 
 ```text
 真实代码
@@ -59,10 +76,10 @@
 
 里程碑：
 
-- `M1`（`blocked`）：冻结真实业务模块输入。阻塞条件见“当前路线”。
+- `M1`（`in_progress`）：冻结 Mattermost Channel Creation 输入范围，并完成固定 ref 的本地读取、Go 解析边界与基线测试/环境依赖验证。
 - `M2`（`pending`）：从真实代码生成并审核 L1/L2/L3/L4 资产，数量范围遵循本 Phase 定义。
 - `M3`（`pending`）：验证角色检索边界和 L4 → Code 反向追溯。
-- `M4`（`pending`）：修改一处已绑定代码并验证影响定位与过期传播。
+- `M4`（`pending`）：基于可控代码变更样本验证影响定位与过期传播；不修改 Mattermost 上游仓库。
 
 Phase 0 中的示例知识和编译流程只用于证明骨架边界，不计入本 Phase 的真实业务验收证据。
 
