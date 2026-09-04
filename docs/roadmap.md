@@ -8,8 +8,8 @@
 - 路线状态：`in_progress`
 - 当前里程碑：`M2 — Code → L4`
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：把 `build_l1` 从占位节点升级为真实 `Code → L1` 生成器。输入固定 Mattermost symbol 源码，输出结构化 `KnowledgeItem`，并与当前 12 条人工基准 L1 对比；不得用继续手工增加知识文件冒充自动生成能力。
-- 当前阻塞：真实 LLM Provider 尚未接入。确定性代码解析、知识资产加载和 lineage 已可运行。
+- 下一验收项：在固定 Mattermost checkout 上执行真实 OpenAI `Code → L1`，将生成结果与 12 条人工基准 L1 对比，并记录遗漏、重复、错误归因和 source binding 是否正确。
+- 当前阻塞：缺少可用于实际运行的 `LLM_API_KEY` / `LLM_MODEL`。生成器和本地验证 harness 已实现，CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -49,28 +49,31 @@
 → 10~30 个 L4 FAQ
 ```
 
-当前产物：
+当前产物与能力：
 
-- L1：12 个，`draft`，均绑定固定 Mattermost repo/commit/file/symbol。
+- L1：12 个人工基准事实，`draft`，均绑定固定 Mattermost repo/commit/file/symbol。
 - L2：4 个，`draft`。
 - L3：3 个，`review`，尚未作为产品真相发布。
 - L4：6 个，`draft`，尚未向普通用户发布。
-- 已实现 `KnowledgeCatalog`，可递归追溯 `derived_from`。
-- 已实现 Knowledge Lineage API，可从 FAQ 找到固定 Mattermost 代码来源。
+- Go/Python parser 与真实 source analysis 已实现。
+- OpenAI Structured Outputs `Code → L1` 生成器已实现。
+- L1 生成器只允许模型输出事实内容和 source symbol 名称；repo/ref/commit/file/行号由程序绑定并校验。
+- `scripts/generate_mattermost_l1.py` 会校验固定 commit、目标文件无本地改动和目标 symbol，再执行真实生成。
+- `KnowledgeCatalog`、lineage 与 Knowledge API 已实现。
 
 ### 里程碑
 
-- `M1`（`completed`）：固定 Mattermost 输入范围；Go parser 已实现；Compiler Preview 可解析 Go 源码并识别目标 symbol；Mattermost 自身 `go test` 命令已记录但未在当前环境实际执行，不宣称通过。
-- `M2`（`in_progress`）：真实 L1/L2/L3/L4 基准资产已形成，但当前仍以人工审读代码后落盘为主；下一步必须实现自动 `Code → L1`。
+- `M1`（`completed`）：固定 Mattermost 输入范围；Go parser 与 Compiler source analysis 已通过 CI；Mattermost 自身 `go test` 命令已记录但未在当前环境实际执行，不宣称通过。
+- `M2`（`in_progress`）：人工 L1-L4 基准资产与真实 `Code → L1` 生成代码均已存在；尚缺一次带真实模型凭据的固定样本运行和基准对比，L4 数量仍为 6/10~30。
 - `M3`（`pending`）：完整角色检索边界尚未实现；L4 → Code 追溯能力已提前完成。
 - `M4`（`pending`）：基于可控代码变更样本验证影响定位与过期传播。
 
 ### 当前验证证据
 
-- Go parser 与 Compiler Go source analysis 已进入 CI。
-- Knowledge Asset Loader、lineage、Knowledge API 已进入 CI。
-- 最新 PR CI 已通过。
-- 一次真实失败曾暴露 Markdown 资产缺少结构化 `title`；当前规则明确为：frontmatter 可提供 `title`，否则必须从首个 Markdown H1 获取，无 H1 则报错。
+- Go parser、Compiler source analysis、L1 source binding、Knowledge Asset Loader、lineage、Knowledge API 均已进入 CI。
+- Compiler 在未配置 provider 时明确记录 `l1_skipped_no_provider`，不再把占位流程标成 `l1_generated`。
+- L2/L3/L4 未实现自动生成时明确记录 `*_not_implemented`，不生成虚假 artifact。
+- 一次真实 CI 失败暴露 Markdown 资产缺少结构化 `title`；当前规则为 frontmatter `title` 或 Markdown H1，二者都缺失时直接失败。
 
 ## Phase 2 — 检索与问答 (`pending`)
 

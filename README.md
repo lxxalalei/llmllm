@@ -64,19 +64,40 @@ symbols:
 
 当前已经形成：
 
-- 12 个真实 L1 Engineering Facts
+- 12 个真实 L1 Engineering Facts 人工基准
 - 4 个 L2 Engineering Rules 草稿
 - 3 个 L3 Product Logic，状态为 `review`
 - 6 个 L4 FAQ 草稿
 - Go/Python Tree-sitter symbol parser
 - Compiler Preview 可解析实际 Go/Python 源码内容并返回 symbol
+- OpenAI Structured Outputs `Code → L1` 生成器
+- L1 SourceBinding 由代码侧绑定，模型不能自行声明 repo/ref/file/line
+- 本地 Mattermost 固定 commit 生成验证脚本
 - Markdown + YAML Knowledge Catalog
 - L4 → L3 → L2 → L1 → Code 的递归 lineage
 - Knowledge Item / Lineage API
 
 Mattermost 的 L3/L4 当前没有标记为 `published`。代码实现是证据，不自动等于已经确认的产品规则。
 
-下一主任务不是继续人工扩 FAQ，而是让 `Code → L1` 从当前人工基准事实升级为真实自动生成流程，并用现有 12 条 L1 作为基准集校验生成质量。
+### 实际运行 Code → L1
+
+准备一个处于固定 commit 的 Mattermost checkout，并配置：
+
+```bash
+export LLM_PROVIDER=openai
+export LLM_MODEL=<支持 Structured Outputs 的模型>
+export LLM_API_KEY=<your key>
+```
+
+然后：
+
+```bash
+python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/mattermost-l1.json
+```
+
+脚本会拒绝错误 commit、目标源码本地改动、缺失目标 symbol 或缺少模型配置，不会把不匹配的源码标记成固定版本证据。
+
+当前尚未在仓库 CI 中执行真实模型调用，因为 CI 没有配置 API Key。现有 12 条 L1 继续作为真实模型输出的人工基准集。
 
 ## API
 
@@ -85,12 +106,6 @@ Mattermost 的 L3/L4 当前没有标记为 `published`。代码实现是证据�
 - `POST /api/v1/compiler/preview`
 - `GET /api/v1/knowledge/{knowledge_id}`
 - `GET /api/v1/knowledge/{knowledge_id}/lineage`
-
-示例：
-
-```bash
-curl http://127.0.0.1:8000/api/v1/knowledge/faq.mattermost.channel.create.limit/lineage
-```
 
 ## 本地启动
 
