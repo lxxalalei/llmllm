@@ -19,6 +19,7 @@ dependencies = [
   "qdrant-client>=1.12,<2",
   "tree-sitter>=0.24,<1",
   "tree-sitter-python>=0.23,<1",
+  "tree-sitter-go>=0.23,<1",
 ]
 
 [project.optional-dependencies]

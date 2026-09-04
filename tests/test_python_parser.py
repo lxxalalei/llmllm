@@ -17,3 +17,4 @@ def archive_if_inactive():
         ("class_definition", "ConversationService"),
         ("function_definition", "archive_if_inactive"),
     ]
+    assert symbols[0].source.startswith("class ConversationService")
