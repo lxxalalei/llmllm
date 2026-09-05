@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
     embedding_model: str | None = None
     retrieval_backend: str = "hybrid"  # hybrid (Qdrant dense + local sparse) | local
+    rerank: bool = True
 
 
 @lru_cache

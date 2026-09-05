@@ -93,21 +93,25 @@ async def answer_question(
     backend: str = "local",
     vector_index=None,
     embedder=None,
+    reranker=None,
 ) -> dict[str, object]:
     """Answer with the requested retrieval backend.
 
-    hybrid = Qdrant dense (role-filtered) fused with local sparse via RRF;
+    hybrid = Qdrant dense (role-filtered) fused with BM25 sparse via RRF;
     any hybrid failure falls back to the local retriever and reports the
-    backend actually used.
+    backend actually used. When a reranker is supplied, candidates are
+    retrieved wider (2x top_k), reranked, then cut back to top_k.
     """
     hits = None
     used_backend = "local"
+    used_rerank = False
+    candidate_k = top_k * 2 if reranker is not None else top_k
     if backend == "hybrid" and vector_index is not None and embedder is not None:
         try:
             from app.knowledge.retrieval import retrieve_hybrid
 
             hits = await retrieve_hybrid(
-                catalog, question, role, vector_index, embedder, top_k=top_k
+                catalog, question, role, vector_index, embedder, top_k=candidate_k
             )
             used_backend = "hybrid"
         except Exception:
@@ -115,8 +119,15 @@ async def answer_question(
     if hits is None:
         from app.knowledge.retrieval import retrieve
 
-        hits = retrieve(catalog, question, role, top_k=top_k)
+        hits = retrieve(catalog, question, role, top_k=candidate_k)
         used_backend = "local"
+    if reranker is not None and hits:
+        try:
+            hits = await reranker.rerank(question, hits)
+            used_rerank = True
+        except Exception:
+            used_rerank = False
+        hits = hits[:top_k]
 
     retrieved = [hit.item.id for hit in hits]
     result = await responder.answer(question, hits)
@@ -129,4 +140,5 @@ async def answer_question(
         "knowledge_gap": bool(result.get("knowledge_gap", False)),
         "retrieved": retrieved,
         "backend": used_backend,
+        "reranked": used_rerank,
     }

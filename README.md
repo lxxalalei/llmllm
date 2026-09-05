@@ -106,6 +106,7 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 ```bash
 export EMBEDDING_MODEL=<embedding model，如 GLM/Embedding-3>
 export RETRIEVAL_BACKEND=hybrid   # hybrid | local，默认 hybrid（不可用自动回退 local）
+export RERANK=false               # 可选：关闭 LLM rerank（默认开启，增加一次模型调用）
 python scripts/sync_qdrant.py     # 将 knowledge/ 资产全量同步到 Qdrant 索引
 ```
 
@@ -124,7 +125,8 @@ python scripts/sync_qdrant.py     # 将 knowledge/ 资产全量同步到 Qdrant 
 - `GET /api/v1/knowledge/{knowledge_id}?role=...`：详情；角色不可见统一返回 404
 - `GET /api/v1/knowledge/{knowledge_id}/lineage?role=...`：血缘（可追溯至代码 SourceBinding）
 - `GET /api/v1/knowledge/{knowledge_id}/drill?role=...`：向更低知识层下钻（如 L3 → L2）
-- `POST /api/v1/qa`：问答助手——按角色检索可见知识资产，用 LLM 组织 grounded 答案（仅引用实际检索到的知识，`cites` 为资产 id；未覆盖时返回 `knowledge_gap: true`）
+- `POST /api/v1/qa`：问答助手——按角色检索可见知识资产（混合检索 + LLM rerank），用 LLM 组织 grounded 答案（仅引用实际检索到的知识，`cites` 为资产 id；未覆盖时返回 `knowledge_gap: true`；`backend`/`reranked` 字段说明实际检索后端与是否重排）
+- `GET /api/v1/analytics/queries`：查询分析——QA 日志列表与聚合（总量、gap 率、backend 分布、top 命中、最近知识缺口）
 
 `role` 省略时为管理/调试视图，不做过滤。
 

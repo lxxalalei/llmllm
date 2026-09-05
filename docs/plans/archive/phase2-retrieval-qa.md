@@ -1,7 +1,7 @@
 # Phase 2 检索与问答 — 首个可实测闭环
 
 - 状态：in_progress
-- 路线：[Phase 2 — 检索与问答](../roadmap.md#phase-2--检索与问答-in_progress)
+- 路线：[Phase 2 — 检索与问答（completed，2026-09-05）](../../roadmap.md#phase-2--检索与问答-completed)
 - 所有者：llmllm 项目
 - 依赖：真实 LLM 凭据（已完成首轮实测）；Qdrant/Embedding 依赖 Docker 或外部端点（当前环境不可用）
 
@@ -29,13 +29,13 @@
 ## 里程碑
 
 - M1 — completed — QA API 真实模型实测通过（上述 4 问）。
-- M2 — completed（2026-09-05）— Embedding Provider（GLM/Embedding-3）+ Qdrant 混合检索落地：
-  - `app/knowledge/vector_index.py`：`knowledge_assets` 集合（cosine），UUID 稳定 point id，payload 存层/状态/visible_roles，user 角色过滤在 Qdrant 服务端执行；
-  - `retrieval.retrieve_hybrid`：Qdrant dense 召回 + 本地 n-gram sparse 召回经 RRF 融合；
-  - `scripts/sync_qdrant.py`：全量同步 + 孤儿清理；实测 31 资产入库；
-  - QA 端点 `backend` 字段：`hybrid`（异常自动回退 `local` 并如实上报）；
-  - Docker（WSL2 引擎）已部署；compose `restart: unless-stopped`。
-- M3 — pending — Reranker、Query Analytics、Knowledge Gap 持久化、BM25 替换 n-gram。
+- M2 — completed（2026-09-05）— Embedding Provider（GLM/Embedding-3）+ Qdrant 混合检索落地（详见 roadmap 与验证记录）。
+- M3 — completed（2026-09-05）— Phase 2 收口：
+  - [x] BM25 sparse（`app/knowledge/bm25.py`：CJK bigram + ASCII 词 token，替换 n-gram）；
+  - [x] Reranker（`app/knowledge/rerank.py`：LLM 0-10 重排，`reranked` 字段，失败自动跳过）；
+  - [x] Query Analytics（`query_logs` 表 + `GET /api/v1/analytics/queries` 聚合）；
+  - [x] Knowledge Gap 持久化（随 query_logs 落库，`summary.recent_gaps` 暴露）。
+  - 39 tests passed（双 Python 环境）；真实端到端：QA（hybrid+reranked）+ analytics summary（total 10 / gap 2 / top_retrieved）实测通过。
 
 ## 验证证据
 
@@ -45,4 +45,6 @@
 
 ## 完成记录
 
-M1 完成。剩余风险与下一验收项见 `docs/roadmap.md`（Phase 2）。
+Phase 2（M1–M3）于 2026-09-05 完成：角色化 grounded 问答 → Qdrant 混合检索（GLM/Embedding-3 嵌入）→ BM25/Reranker/Analytics/Gap 持久化。本地 Docker（WSL2 引擎）就绪，compose 服务 `restart: unless-stopped`。
+
+剩余风险：单次 QA 含两次模型调用（rerank + answer）与两路检索，端到端延迟数秒级；LLM reranker 增加成本与延迟，可用 `RERANK=false` 关闭；Analytics 使用 NullPool（每操作新建连接），高频分析场景需改回连接池；检索质量指标集未建立。下一验收项见 `docs/roadmap.md`（Phase 3）。

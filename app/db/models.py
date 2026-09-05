@@ -49,3 +49,24 @@ class SourceBindingRecord(Base):
     commit: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     file: Mapped[str] = mapped_column(String(1024), index=True)
     symbol: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
+
+
+class QueryLogRecord(Base):
+    """Query analytics + knowledge-gap persistence for the QA assistant."""
+
+    __tablename__ = "query_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    question: Mapped[str] = mapped_column(Text)
+    role: Mapped[str] = mapped_column(String(32), index=True)
+    backend: Mapped[str] = mapped_column(String(32))
+    reranked: Mapped[bool] = mapped_column(default=False)
+    retrieved: Mapped[str] = mapped_column(Text, default="[]")
+    cites: Mapped[str] = mapped_column(Text, default="[]")
+    gap: Mapped[bool] = mapped_column(default=False, index=True)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )

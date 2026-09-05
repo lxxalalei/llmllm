@@ -4,11 +4,11 @@
 
 ## 当前路线
 
-- 当前主路线：`Phase 2 — 检索与问答`（Phase 1 已于 2026-09-05 完成）
+- 当前主路线：`Phase 3 — 增量知识编译`（Phase 2 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`Phase 2 M2 — Qdrant 混合检索`（2026-09-05 完成：Embedding Provider + Qdrant 索引同步 + dense/sparse RRF 融合）
+- 当前里程碑：`Phase 2 — 检索与问答`（completed，2026-09-05：M1 问答闭环 + M2 Qdrant 混合检索 + M3 BM25/Reranker/Analytics/Gap 持久化）
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：补齐 Reranker、Query Analytics、Knowledge Gap 持久化，并把 sparse 召回从本地 n-gram 升级为 BM25；随后进入 Phase 3（增量知识编译）。
+- 下一验收项（Phase 3 首闭环）：Git Webhook / 变更检测接入——代码变更后自动定位 changed symbol、调用 M4 影响分析、按需增量重生成并同步 Qdrant 索引（利用 `app/knowledge/impact.py` 与 `scripts/sync_qdrant.py`）。
 - 当前阻塞：无（Phase 1 全里程碑完成，2026-09-05）。CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
@@ -79,17 +79,19 @@
 - 角色消费边界（M3，2026-09-05）：`GET /api/v1/knowledge?role=...`、详情/lineage/drill 端点支持 `role` 门控（不可见统一 404，防枚举）；`app/knowledge/views.py` 显式编码角色策略；`tests/test_role_views.py` 覆盖 user/product/test/developer 边界与下钻。
 - 影响定位与过期传播（M4，2026-09-05）：`app/knowledge/impact.py`（changed-symbol 检测按内容 hash，行漂移记为 shifted 不传播；绑定 L1 定位；反向 derived_from 闭包；状态建议 L1/L2→outdated、L3 published→review、L4 published→outdated）；`scripts/analyze_code_impact.py` dry-run/--apply；`tests/test_impact.py`。端到端报告：`.scratch/m4/impact-report.json`。
 
-## Phase 2 — 检索与问答 (`in_progress`)
+## Phase 2 — 检索与问答 (`completed`)
+
+实施记录：[Phase 2 检索与问答（已归档）](plans/archive/phase2-retrieval-qa.md)
 
 - [x] Embedding Provider（GLM/Embedding-3 via OpenAI 兼容 `/embeddings`，`EMBEDDING_MODEL` 配置，2026-09-05）
-- [ ] Sparse / BM25（BM25 未落地；sparse 召回当前为本地 n-gram，已参与 RRF 融合）
+- [x] Sparse / BM25（自实现 BM25：CJK bigram + ASCII 词 token，k1=1.5/b=0.75，替换 n-gram 参与 RRF 融合）
 - [x] Qdrant Hybrid Search（dense 角色过滤检索 + 本地 sparse n-gram 经 RRF 融合；`scripts/sync_qdrant.py` 全量同步含孤儿清理；检索后端 `hybrid` 异常自动回退 `local`，响应 `backend` 字段如实上报，2026-09-05）
 - [x] Metadata / Role Filter（M3 角色消费边界；检索基于角色可见资产）
-- [ ] Reranker（未落地）
+- [x] Reranker（LLM cross-encoder 式：候选扩至 2×top_k → 0-10 打分 → 截回 top_k；响应 `reranked` 字段；异常自动跳过，2026-09-05）
 - [x] FAQ Direct Match（本地 n-gram 评分，接口契约可替换）
 - [x] L3 Fallback（检索按角色覆盖 L2/L3/L4；user 仅 published L3/L4）
-- [ ] Query Analytics（未落地）
-- [x] Knowledge Gap（`/api/v1/qa` 返回 `knowledge_gap`；持久化记录未落地）
+- [x] Query Analytics（PostgreSQL `query_logs` + `GET /api/v1/analytics/queries`：列表/筛选与聚合——总量、gap 率、backend 分布、top 命中、最近 gap；连接池 NullPool 跨事件循环安全，2026-09-05）
+- [x] Knowledge Gap（QA 返回 `knowledge_gap` 并随 `query_logs` 持久化；`/api/v1/analytics/queries` 的 `summary.recent_gaps` 可查，2026-09-05）
 
 已实现 QA 闭环（2026-09-05）：`POST /api/v1/qa`——按角色检索可见资产 → LLM 组织 grounded 答案（仅允许引用实际检索资产，cites 由代码硬化）→ 34 项测试通过（含 Qdrant 集成测试，无 Qdrant 环境自动跳过）。
 
