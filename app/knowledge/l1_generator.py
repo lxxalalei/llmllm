@@ -30,7 +30,9 @@ class EngineeringFactExtractor(Protocol):
 class L1Generator:
     """Convert model-extracted engineering facts into authoritative L1 draft objects.
 
-    Source identity is supplied by code, never invented by the model.
+    Source identity is supplied by code, never invented by the model. During
+    incremental regeneration an extractor may expose ``extract_incremental``;
+    existing facts are then supplied so stable keys can be reused.
     """
 
     def __init__(self, extractor: EngineeringFactExtractor) -> None:
@@ -47,11 +49,19 @@ class L1Generator:
         commit: str | None,
         file: str,
         symbols: list[Symbol],
+        existing_items: list[KnowledgeItem] | None = None,
     ) -> list[KnowledgeItem]:
         if not symbols:
             return []
 
-        batch = await self._extractor.extract(symbols)
+        if existing_items:
+            extract_incremental = getattr(self._extractor, "extract_incremental", None)
+            if extract_incremental is None:
+                raise ValueError("engineering fact extractor does not support incremental regeneration")
+            batch = await extract_incremental(symbols, existing_items)
+        else:
+            batch = await self._extractor.extract(symbols)
+
         symbol_map = {symbol.name: symbol for symbol in symbols}
         items: list[KnowledgeItem] = []
         seen_ids: set[str] = set()

@@ -17,16 +17,24 @@ class SymbolChange:
 
 
 def symbol_signatures(source: str) -> dict[str, tuple[str, int, int]]:
-    """Per-symbol (content hash, start_line, end_line) used to detect drift."""
-    symbols = GoCodeParser().extract_symbols(source)
-    return {
-        symbol.name: (
+    """Per-symbol (content hash, start_line, end_line) used to detect drift.
+
+    The current Go Symbol identity is name-only. Go permits same method names on
+    different receiver types, so fail explicitly until the parser exposes a
+    receiver-aware identity instead of silently overwriting one method.
+    """
+    signatures: dict[str, tuple[str, int, int]] = {}
+    for symbol in GoCodeParser().extract_symbols(source):
+        if symbol.name in signatures:
+            raise ValueError(
+                f"duplicate Go symbol name is ambiguous without receiver identity: {symbol.name}"
+            )
+        signatures[symbol.name] = (
             hashlib.sha256(symbol.source.encode("utf-8")).hexdigest(),
             symbol.start_line,
             symbol.end_line,
         )
-        for symbol in symbols
-    }
+    return signatures
 
 
 def changed_symbols(old_source: str, new_source: str) -> list[SymbolChange]:
@@ -190,6 +198,9 @@ def apply_transitions(knowledge_root, transitions: list[dict]) -> list[str]:
         old_line = f"status: {transition['current']}"
         if old_line not in text:
             raise ValueError(f"cannot find {old_line!r} in {path}")
-        path.write_text(text.replace(old_line, f"status: {transition['proposed']}", 1), encoding="utf-8")
+        path.write_text(
+            text.replace(old_line, f"status: {transition['proposed']}", 1),
+            encoding="utf-8",
+        )
         changed_files.append(str(path))
     return changed_files

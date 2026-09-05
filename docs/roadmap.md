@@ -6,10 +6,10 @@
 
 - 当前主路线：`Phase 3 — 增量知识编译`（Phase 2 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`M1 — Git change intake`
+- 当前里程碑：`M2 — Incremental regeneration`
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：使用一个可控 GitHub push 做真实外部事件验证；验证通过后进入 M2，仅对受影响 symbol 增量重生成 L1/L2，并把 L3 变化送入 Review。
-- 当前阻塞：无。CI 不执行外部付费模型调用；真实 GitHub delivery 尚未验证，不将 mock/fake client 测试描述成外部端到端链路。
+- 下一验收项：等待 Mattermost `server/channels/app/channel.go` 出现一次真实上游变化，使用 `scripts/regenerate_mattermost_change.py` 对目标 commit 执行 L1/L2 dry-run，并核对 L3 Review 列表；随后进入 M3 Publish / index refresh。
+- 当前阻塞：无。当前 Mattermost master 相对知识基线已有后续提交，但目标 `channel.go` 尚未变化，因此尚无真实 M2 上游样本可运行模型 dry-run。CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -102,17 +102,21 @@ Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embed
 实施计划：[Phase 3 增量知识编译](plans/phase3-incremental-compile.md)
 
 - [x] Git Webhook / change intake：`POST /api/v1/webhooks/github` 接受 push，读取 GitHub compare。
-- [x] Diff Analyzer：只处理当前 `repository@before` 已有 L1 SourceBinding 的文件，并拉取 before/after 源码。
-- [x] Changed Symbol Detection：沿用 Phase 1 的 symbol content hash；行漂移 `shifted` 不传播。
+- [x] Diff Analyzer：按已有 L1 SourceBinding 的 `repository + ref + baseline commit + file` 读取 before/after 源码；漏投 Webhook 时可从知识基线补追。
+- [x] Changed Symbol Detection：沿用 Phase 1 的 symbol content hash；行漂移 `shifted` 不传播；当前 Go parser 对 receiver 同名 method 无法安全区分时显式失败。
 - [x] Impact Propagation：L1 定位收紧到 `repo + commit + file + symbol`，再沿 `derived_from` 反向闭包生成影响报告。
-- [ ] L1/L2 自动更新
-- [ ] L3 Review Queue
-- [ ] L4 自动再生成
-- [ ] Review/Publish 后增量刷新 Qdrant
+- [x] L1 增量重生成核心：只重生成已有绑定且 changed 的 symbol；old/new facts 形成 unchanged/changed/added/removed diff；未变化事实仅推进 SourceBinding。
+- [x] L2 增量重生成核心：仅在 L1 语义变化时基于当前完整 L1 feature scope 重新综合 L2，并形成 old/new diff。
+- [x] L3 Review routing：只有 L2 真正变化才列出依赖它的 L3 Review 候选，不自动发布产品真相。
+- [x] Mattermost M2 dry-run 入口：`scripts/regenerate_mattermost_change.py` 输出 L1/L2 diff + L3 Review JSON，不写正式 Markdown/Qdrant。
+- [ ] 使用真实 Mattermost `channel.go` 上游变化执行模型 dry-run。
+- [ ] Review/Publish 后写回 Markdown/Git，并增量刷新 Qdrant。
 
-M1 验证（2026-09-05）：PR #3 CI run #42 success。测试覆盖 lineage 角色穿透、同名 symbol 跨文件误传播、tracked source 过滤、无绑定 commit 不触发远端 compare、Webhook 非 push 与初始 branch push 边界。该证据是代码/接口级验证，尚未完成真实 GitHub Webhook delivery。
+M1 代码级验证：PR #3 最终 head CI success；真实外部 GitHub Webhook delivery 尚未单独宣称通过。
 
-当前原则：Webhook 只生成 impact report，不直接改写正式 Markdown/Git 知识资产，也不直接修改 Qdrant；增量生成、Review、Publish 后再更新 canonical knowledge 和搜索索引。
+M2 代码级验证：PR #4 CI 已覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding commit/line 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离、同名 Go method/缺失 symbol/重复 Knowledge ID 显式失败，以及 Mattermost dry-run 在目标文件未变化时不调用 LLM。真实付费模型增量运行等待 `channel.go` 出现上游变化。
+
+当前原则：Webhook/增量编译运行时只产生报告和候选知识，不直接改写正式 Markdown/Git，也不直接修改 Qdrant；Review/Publish 后才更新 canonical knowledge 和搜索索引。
 
 ## Phase 4 — 企业化 (`pending`)
 

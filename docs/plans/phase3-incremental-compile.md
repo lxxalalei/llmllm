@@ -17,14 +17,16 @@ GitHub push
 → repo + commit + file + symbol 精确定位 L1
 → derived_from 反向传播
 → impact report
-→ 后续增量重生成 / Review / Publish / Qdrant sync
+→ 增量 L1/L2
+→ L3 Review
+→ Publish 后 Qdrant sync
 ```
 
 ## 当前边界
 
-首个闭环只做“事件读取 + 影响报告”，**不在 Webhook 请求中直接改写正式知识文件**。知识发布仍应经过 Git 产物与 Review，而不是让运行时绕过 canonical store。
+知识发布仍经过 Git/Markdown 与 Review，不允许 Webhook 或模型运行时绕过 canonical store 直接修改正式知识。当前只对已有 Go SourceBinding 执行 symbol diff；其他语言进入后续扩展。
 
-当前只对已有 Go SourceBinding 执行 symbol diff；其他语言进入后续扩展。Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 SourceBinding commit；这样即使漏掉一次 delivery，后续 push 也能从知识实际基线补追到最新 `after`。只有与 SourceBinding `ref` 匹配的 branch/tag push 才进入影响分析，feature branch 不会冲击 `master` 知识。
+Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 SourceBinding commit；这样即使漏掉一次 delivery，后续 push 也能从知识实际基线补追到最新 `after`。只有与 SourceBinding `ref` 匹配的 branch/tag push 才进入影响分析，feature branch 不会冲击 `master` 知识。
 
 ## M1 — Git change intake
 
@@ -40,17 +42,31 @@ GitHub push
 
 ## M2 — Incremental regeneration
 
-- 仅对受影响 symbol 调用 Code → L1。
-- 对比旧/新 L1，区分 unchanged / changed / removed / added facts。
-- 自动更新 L2 草稿。
-- L3 变化进入 Review，不自动发布产品真相。
+- [x] 仅对已有 SourceBinding 覆盖且发生 `added/modified` 的 symbol 调用 Code → L1；removed symbol 不调用模型。
+- [x] 同文件未绑定 symbol 的变化只报告为 `unbound_symbol_changes`，不自动吸收到当前 feature。
+- [x] 旧 L1 key/content 作为增量上下文；仍成立的事实要求复用稳定 ID。
+- [x] 对比旧/新 L1，区分 unchanged / changed / removed / added；语义变化时升版本。
+- [x] 未变化/仅行漂移的 L1 不重新生成，但 SourceBinding 推进到新 commit/file/line。
+- [x] 基于更新后的当前 L1 feature scope 重新综合 L2，不允许 Code 直接跳到 L2。
+- [x] 对比旧/新 L2；只有 L1 发生语义变化才调用 L2 模型。
+- [x] 只有 L2 真正变化才把依赖它的 L3 列入 Review；不自动发布产品真相。
+- [x] 同名 Go method、缺失 source symbol、重复 Knowledge ID 等当前 parser 无法安全判定的情况显式失败，不静默丢事实。
+- [x] `scripts/regenerate_mattermost_change.py` 提供 Mattermost Channel Creation dry-run：读取知识基线与目标 commit，输出 L1/L2 diff + L3 Review JSON，不写 Markdown/Qdrant。
+- [x] dry-run 脚本测试覆盖 tracked file 未变化时无需 LLM，以及 tracked file rename 识别。
+- [ ] 使用一次真实 `channel.go` 上游变化执行模型 dry-run。目前 Mattermost master 相对知识基线虽有后续提交，但目标文件尚未变化。
 
 ## M3 — Publish and index refresh
 
-- Review 通过后落盘 Markdown/Git。
-- 更新 source commit / lineage。
-- 只刷新受影响检索资产；必要时保留全量 sync 作为修复工具。
-- 验证发布前后普通用户检索结果变化。
+- [ ] Review 通过后落盘 Markdown/Git。
+- [ ] 更新 source commit / lineage。
+- [ ] 只刷新受影响检索资产；必要时保留全量 sync 作为修复工具。
+- [ ] 验证发布前后普通用户检索结果变化。
+
+## 验证证据
+
+- PR #4 最新 dry-run/文档收口前一版 CI #81 success；覆盖全部单元/业务测试。
+- Copilot 对同名 Go method、静默丢 carried fact、重复 Knowledge ID 的三条 review 均已修复并关闭 thread。
+- 当前 Mattermost master 相比知识基线向前推进，但 `server/channels/app/channel.go` 未变化，所以还不能声称完成真实模型增量运行。
 
 ## 非目标
 
