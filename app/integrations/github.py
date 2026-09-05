@@ -76,8 +76,20 @@ class GitHubSourceClient:
         await self._client.aclose()
 
 
-def bound_source_baselines(catalog, repository: str) -> dict[str, str]:
-    """Current source commit for every L1-bound file in a repository.
+def _ref_matches(push_ref: str, source_ref: str) -> bool:
+    if push_ref == source_ref:
+        return True
+    if source_ref.startswith("refs/"):
+        return False
+    return push_ref == f"refs/heads/{source_ref}" or push_ref == f"refs/tags/{source_ref}"
+
+
+def bound_source_baselines(
+    catalog,
+    repository: str,
+    push_ref: str | None = None,
+) -> dict[str, str]:
+    """Current source commit for every L1-bound file in a repository/ref.
 
     Multiple L1 facts may point at the same file, but they must agree on the
     baseline commit. If they do not, impact analysis cannot know which source
@@ -89,6 +101,12 @@ def bound_source_baselines(catalog, repository: str) -> dict[str, str]:
             continue
         for source in item.sources:
             if source.repo != repository or source.commit is None:
+                continue
+            if (
+                push_ref is not None
+                and source.ref is not None
+                and not _ref_matches(push_ref, source.ref)
+            ):
                 continue
             current = baselines.get(source.file)
             if current is not None and current != source.commit:
@@ -107,20 +125,23 @@ async def analyze_repository_change(
     before: str,
     after: str,
     client: GitHubSourceClient,
+    ref: str | None = None,
 ) -> dict[str, object]:
     """Read GitHub changes from the knowledge baseline to `after`.
 
     `before` is recorded from the push event, but impact analysis deliberately
     starts from each L1 SourceBinding commit. This makes a later push able to
-    catch up if an earlier webhook delivery was missed.
+    catch up if an earlier webhook delivery was missed. When the push provides
+    a Git ref, only L1 assets bound to that ref are considered.
 
     Canonical Markdown knowledge is not rewritten here. Regeneration/review/
     publish is the next Phase 3 boundary.
     """
-    baselines = bound_source_baselines(catalog, repository)
+    baselines = bound_source_baselines(catalog, repository, ref)
     if not baselines:
         return {
             "repository": repository,
+            "ref": ref,
             "before": before,
             "after": after,
             "tracked_files": [],
@@ -194,6 +215,7 @@ async def analyze_repository_change(
 
     return {
         "repository": repository,
+        "ref": ref,
         "before": before,
         "after": after,
         "tracked_files": sorted(baselines),
