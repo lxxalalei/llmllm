@@ -50,3 +50,7 @@ class OpenAIEngineeringFactExtractor:
         if not response.output_text:
             raise ValueError("OpenAI returned no structured engineering facts")
         return EngineeringFactBatch.model_validate_json(response.output_text)
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client (required before asyncio loop shutdown)."""
+        await self._client.close()

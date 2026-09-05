@@ -14,6 +14,7 @@ from app.llm import OpenAIEngineeringFactExtractor
 
 PINNED_COMMIT = "43b2ae87e06b06abe01f9382ec26899c54c31728"
 SOURCE_FILE = Path("server/channels/app/channel.go")
+SOURCE_FILE_POSIX = SOURCE_FILE.as_posix()
 TARGET_SYMBOLS = {"CreateChannelWithUser", "CreateChannel"}
 
 
@@ -32,7 +33,7 @@ def _validate_checkout(root: Path) -> None:
     if head != PINNED_COMMIT:
         raise SystemExit(f"Mattermost checkout must be pinned to {PINNED_COMMIT}; got {head}")
 
-    changed = _git(root, "status", "--porcelain", "--", str(SOURCE_FILE))
+    changed = _git(root, "status", "--porcelain", "--", SOURCE_FILE_POSIX)
     if changed:
         raise SystemExit(f"Mattermost source file has local changes: {SOURCE_FILE}")
 
@@ -59,16 +60,20 @@ async def _run(root: Path) -> list[dict[str, object]]:
     if missing:
         raise SystemExit(f"target Mattermost symbols not found: {', '.join(sorted(missing))}")
 
-    items = await _generator().generate(
-        namespace="mattermost.channel.create",
-        module="mattermost.channel",
-        feature="channel_creation",
-        repo="mattermost/mattermost",
-        ref="master",
-        commit=PINNED_COMMIT,
-        file=str(SOURCE_FILE),
-        symbols=symbols,
-    )
+    generator = _generator()
+    try:
+        items = await generator.generate(
+            namespace="mattermost.channel.create",
+            module="mattermost.channel",
+            feature="channel_creation",
+            repo="mattermost/mattermost",
+            ref="master",
+            commit=PINNED_COMMIT,
+            file=SOURCE_FILE_POSIX,
+            symbols=symbols,
+        )
+    finally:
+        await generator.close()
     return [item.model_dump(mode="json") for item in items]
 
 

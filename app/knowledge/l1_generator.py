@@ -91,3 +91,9 @@ class L1Generator:
             )
 
         return items
+
+    async def close(self) -> None:
+        """Close the underlying extractor client if it exposes one."""
+        close = getattr(self._extractor, "close", None)
+        if close is not None:
+            await close()
