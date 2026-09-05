@@ -10,7 +10,8 @@
 
 ```text
 GitHub push
-→ compare before/after
+→ 按 repository + ref 找到已有 L1 SourceBinding
+→ 从知识资产绑定 commit 追到 push.after
 → 只读取已有 L1 SourceBinding 覆盖的文件
 → changed symbol
 → repo + commit + file + symbol 精确定位 L1
@@ -23,14 +24,15 @@ GitHub push
 
 首个闭环只做“事件读取 + 影响报告”，**不在 Webhook 请求中直接改写正式知识文件**。知识发布仍应经过 Git 产物与 Review，而不是让运行时绕过 canonical store。
 
-当前只对已有 Go SourceBinding 执行 symbol diff；其他语言进入后续扩展。
+当前只对已有 Go SourceBinding 执行 symbol diff；其他语言进入后续扩展。Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 SourceBinding commit；这样即使漏掉一次 delivery，后续 push 也能从知识实际基线补追到最新 `after`。只有与 SourceBinding `ref` 匹配的 branch/tag push 才进入影响分析，feature branch 不会冲击 `master` 知识。
 
 ## M1 — Git change intake
 
-- [x] GitHub push API 入口。
+- [x] GitHub push API 入口；要求真实 `X-GitHub-Event: push`、40 位 commit SHA 与 Git ref。
 - [x] GitHub compare 读取 changed files。
-- [x] 只读取当前 `repository@before` 已有 L1 绑定的文件。
-- [x] 拉取 before/after 源码。
+- [x] 按 `repository + ref` 只选择已有 L1 SourceBinding 覆盖的文件。
+- [x] 从各文件的 SourceBinding commit 追到 `push.after`；Webhook 漏投时可补追。
+- [x] 拉取 baseline/after 源码；空文件与 404 明确区分。
 - [x] changed symbol → impact report。
 - [x] L1 绑定从 `symbol + commit` 收紧到 `repo + commit + file + symbol`。
 - [x] Lineage 角色视图补齐：返回链内每个节点与 SourceBinding 均遵守角色边界。
