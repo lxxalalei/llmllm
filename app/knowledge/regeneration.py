@@ -265,16 +265,33 @@ async def regenerate_go_file_l1(
 ) -> dict[str, object]:
     """Regenerate changed Go symbols while advancing all surviving file bindings.
 
-    Only added/removed/modified symbols are sent to the model. Facts on
-    untouched or line-shifted symbols are carried forward and rebound to the
-    new commit so a source file keeps one authoritative baseline.
+    Only added/removed/modified symbols that already have L1 bindings are sent
+    to the model. Other changed symbols are reported but not absorbed into the
+    current feature automatically. Facts on untouched or line-shifted symbols
+    are carried forward and rebound to the new commit.
     """
     existing = file_l1_items(catalog, repo=repo, file=old_file, commit=baseline)
     scope = infer_file_scope(existing)
     symbol_changes = changed_symbols(old_source, new_source)
-    semantic_names = {
-        change.name for change in symbol_changes if change.change != "shifted"
+    bound_symbol_names = {
+        source.symbol
+        for item in existing
+        for source in item.sources
+        if source.repo == repo
+        and source.file == old_file
+        and source.commit == baseline
+        and source.symbol is not None
     }
+    semantic_names = {
+        change.name
+        for change in symbol_changes
+        if change.change != "shifted" and change.name in bound_symbol_names
+    }
+    unbound_symbol_changes = [
+        {"name": change.name, "change": change.change}
+        for change in symbol_changes
+        if change.change != "shifted" and change.name not in bound_symbol_names
+    ]
 
     parsed_new = GoCodeParser().extract_symbols(new_source)
     new_symbol_map = {symbol.name: symbol for symbol in parsed_new}
@@ -345,6 +362,7 @@ async def regenerate_go_file_l1(
             {"name": change.name, "change": change.change}
             for change in symbol_changes
         ],
+        "unbound_symbol_changes": unbound_symbol_changes,
         "l1_changes": [
             {"id": change.id, "change": change.change}
             for change in changes
