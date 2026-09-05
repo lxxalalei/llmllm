@@ -90,10 +90,34 @@ async def answer_question(
     role,
     responder: QAResponder,
     top_k: int = 4,
+    backend: str = "local",
+    vector_index=None,
+    embedder=None,
 ) -> dict[str, object]:
-    from app.knowledge.retrieval import retrieve
+    """Answer with the requested retrieval backend.
 
-    hits = retrieve(catalog, question, role, top_k=top_k)
+    hybrid = Qdrant dense (role-filtered) fused with local sparse via RRF;
+    any hybrid failure falls back to the local retriever and reports the
+    backend actually used.
+    """
+    hits = None
+    used_backend = "local"
+    if backend == "hybrid" and vector_index is not None and embedder is not None:
+        try:
+            from app.knowledge.retrieval import retrieve_hybrid
+
+            hits = await retrieve_hybrid(
+                catalog, question, role, vector_index, embedder, top_k=top_k
+            )
+            used_backend = "hybrid"
+        except Exception:
+            hits = None
+    if hits is None:
+        from app.knowledge.retrieval import retrieve
+
+        hits = retrieve(catalog, question, role, top_k=top_k)
+        used_backend = "local"
+
     retrieved = [hit.item.id for hit in hits]
     result = await responder.answer(question, hits)
     # citation hardening: only ids that were actually supplied may be cited
@@ -104,4 +128,5 @@ async def answer_question(
         "cites": cites,
         "knowledge_gap": bool(result.get("knowledge_gap", False)),
         "retrieved": retrieved,
+        "backend": used_backend,
     }

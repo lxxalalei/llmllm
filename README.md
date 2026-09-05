@@ -101,6 +101,16 @@ export OPENAI_BASE_URL=<endpoint base url>
 python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/mattermost-l1.json
 ```
 
+知识检索与问答（Phase 2）：
+
+```bash
+export EMBEDDING_MODEL=<embedding model，如 GLM/Embedding-3>
+export RETRIEVAL_BACKEND=hybrid   # hybrid | local，默认 hybrid（不可用自动回退 local）
+python scripts/sync_qdrant.py     # 将 knowledge/ 资产全量同步到 Qdrant 索引
+```
+
+`POST /api/v1/qa` 响应中的 `backend` 字段表示本次实际使用的检索后端。
+
 脚本会拒绝错误 commit、目标源码本地改动、缺失目标 symbol 或缺少模型配置，不会把不匹配的源码标记成固定版本证据。
 
 当前尚未在仓库 CI 中执行真实模型调用，因为 CI 没有配置 API Key。现有 12 条 L1 继续作为真实模型输出的人工基准集。

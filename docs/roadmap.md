@@ -6,9 +6,9 @@
 
 - 当前主路线：`Phase 2 — 检索与问答`（Phase 1 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`Phase 2 首个闭环 — 角色化检索 + LLM grounded 问答 API`（2026-09-05 完成并真实模型实测）
+- 当前里程碑：`Phase 2 M2 — Qdrant 混合检索`（2026-09-05 完成：Embedding Provider + Qdrant 索引同步 + dense/sparse RRF 融合）
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：把检索层从本地 n-gram 占位替换为可扩展索引——优先落地 Embedding Provider + Qdrant 混合检索（当前环境无 Docker/Qdrant，需先恢复该依赖），并补齐 Sparse/BM25、Reranker、Query Analytics 与 Knowledge Gap 持久化。
+- 下一验收项：补齐 Reranker、Query Analytics、Knowledge Gap 持久化，并把 sparse 召回从本地 n-gram 升级为 BM25；随后进入 Phase 3（增量知识编译）。
 - 当前阻塞：无（Phase 1 全里程碑完成，2026-09-05）。CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
@@ -81,9 +81,9 @@
 
 ## Phase 2 — 检索与问答 (`in_progress`)
 
-- [ ] Embedding Provider（依赖外部 embedding 模型/端点，未落地）
-- [ ] Sparse / BM25（未落地；当前为本地 n-gram 占位）
-- [ ] Qdrant Hybrid Search（当前环境无 Docker，未落地）
+- [x] Embedding Provider（GLM/Embedding-3 via OpenAI 兼容 `/embeddings`，`EMBEDDING_MODEL` 配置，2026-09-05）
+- [ ] Sparse / BM25（BM25 未落地；sparse 召回当前为本地 n-gram，已参与 RRF 融合）
+- [x] Qdrant Hybrid Search（dense 角色过滤检索 + 本地 sparse n-gram 经 RRF 融合；`scripts/sync_qdrant.py` 全量同步含孤儿清理；检索后端 `hybrid` 异常自动回退 `local`，响应 `backend` 字段如实上报，2026-09-05）
 - [x] Metadata / Role Filter（M3 角色消费边界；检索基于角色可见资产）
 - [ ] Reranker（未落地）
 - [x] FAQ Direct Match（本地 n-gram 评分，接口契约可替换）
@@ -91,7 +91,9 @@
 - [ ] Query Analytics（未落地）
 - [x] Knowledge Gap（`/api/v1/qa` 返回 `knowledge_gap`；持久化记录未落地）
 
-已实现 QA 闭环（2026-09-05）：`POST /api/v1/qa`——按角色检索可见资产（本地 n-gram，`app/knowledge/retrieval.py`）→ LLM 组织 grounded 答案（`app/knowledge/qa.py`，仅允许引用实际检索资产，cites 由代码硬化）→ 31 项测试通过；真实模型实测 4 问（user/product/developer + 盲区 gap）全部符合预期。
+已实现 QA 闭环（2026-09-05）：`POST /api/v1/qa`——按角色检索可见资产 → LLM 组织 grounded 答案（仅允许引用实际检索资产，cites 由代码硬化）→ 34 项测试通过（含 Qdrant 集成测试，无 Qdrant 环境自动跳过）。
+
+Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embedding Provider）、`app/knowledge/vector_index.py`（Qdrant 索引：UUID 稳定 point id、payload 含层/状态/可见角色、角色过滤在服务端执行、全量同步孤儿清理）、`retrieval.retrieve_hybrid`（dense+sparse RRF）、`scripts/sync_qdrant.py`。真实同步 31 个资产 → `knowledge_assets`；QA 实测 `backend: hybrid` 回答正确且引用真实。本机 Docker（WSL2 引擎）已部署，compose 服务 `restart: unless-stopped`。
 
 ## Phase 3 — 增量知识编译 (`pending`)
 

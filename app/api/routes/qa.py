@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field
 from app.core.config import settings
 from app.knowledge import KnowledgeCatalog
 from app.knowledge.models import UserRole
+from app.knowledge.embeddings import OpenAIEmbeddingProvider
 from app.knowledge.qa import OpenAIQAResponder, answer_question
+from app.knowledge.vector_index import KnowledgeVectorIndex
 
 router = APIRouter()
 KNOWLEDGE_ROOT = Path("knowledge")
@@ -30,6 +32,7 @@ class QaResponse(BaseModel):
     cites: list[Cite]
     knowledge_gap: bool
     retrieved: list[str]
+    backend: str
 
 
 def _build_responder() -> OpenAIQAResponder | None:
@@ -47,6 +50,14 @@ async def qa(payload: QaRequest) -> QaResponse:
             detail="LLM not configured: set LLM_PROVIDER=openai, LLM_API_KEY and LLM_MODEL",
         )
     catalog = KnowledgeCatalog.from_directory(KNOWLEDGE_ROOT)
+    backend = settings.retrieval_backend
+    embedder = None
+    vector_index = None
+    if backend == "hybrid" and settings.embedding_model and settings.llm_api_key:
+        embedder = OpenAIEmbeddingProvider(
+            api_key=settings.llm_api_key, model=settings.embedding_model
+        )
+        vector_index = KnowledgeVectorIndex()
     try:
         result = await answer_question(
             catalog=catalog,
@@ -54,9 +65,16 @@ async def qa(payload: QaRequest) -> QaResponse:
             role=payload.role,
             responder=responder,
             top_k=payload.top_k,
+            backend=backend,
+            vector_index=vector_index,
+            embedder=embedder,
         )
     finally:
         await responder.close()
+        if embedder is not None:
+            await embedder.close()
+        if vector_index is not None:
+            await vector_index.close()
 
     by_id = {item.id: item for item in catalog._items.values()}
     cites = [
@@ -74,4 +92,5 @@ async def qa(payload: QaRequest) -> QaResponse:
         cites=cites,
         knowledge_gap=result["knowledge_gap"],
         retrieved=result["retrieved"],
+        backend=result["backend"],
     )

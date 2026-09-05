@@ -57,3 +57,38 @@ def retrieve(
     )
     hits = [RetrievalHit(item=item, score=score) for score, item in ranked if score > 0]
     return hits[:top_k]
+
+
+def reciprocal_rank_fusion(ranked_ids: list[list[str]], k: int = 60) -> dict[str, float]:
+    """RRF over dense (Qdrant) and sparse (local n-gram) recall lists."""
+    scores: dict[str, float] = {}
+    for ranks in ranked_ids:
+        for position, knowledge_id in enumerate(ranks):
+            scores[knowledge_id] = scores.get(knowledge_id, 0.0) + 1.0 / (k + position + 1)
+    return dict(sorted(scores.items(), key=lambda pair: pair[1], reverse=True))
+
+
+async def retrieve_hybrid(
+    catalog: KnowledgeCatalog,
+    question: str,
+    role,
+    vector_index,
+    embedder,
+    top_k: int = 4,
+) -> list[RetrievalHit]:
+    """Dense (Qdrant, role-filtered server-side) + sparse (local n-gram) fused."""
+    dense = await vector_index.search(question, embedder, role, limit=top_k * 3)
+    dense_ids = [knowledge_id for knowledge_id, _score in dense]
+    sparse = retrieve(catalog, question, role, top_k=top_k * 3)
+    sparse_ids = [hit.item.id for hit in sparse]
+    fused = reciprocal_rank_fusion([dense_ids, sparse_ids])
+    hits = []
+    for knowledge_id, score in fused.items():
+        try:
+            item = catalog.get(knowledge_id)
+        except KeyError:
+            continue  # stale index entry
+        hits.append(RetrievalHit(item=item, score=score))
+        if len(hits) >= top_k:
+            break
+    return hits

@@ -29,14 +29,19 @@
 ## 里程碑
 
 - M1 — completed — QA API 真实模型实测通过（上述 4 问）。
-- M2 — pending — 检索层替换：Embedding Provider + Qdrant 混合检索（需 Docker 或外部向量端点）。
-- M3 — pending — Reranker、Query Analytics、Knowledge Gap 持久化。
+- M2 — completed（2026-09-05）— Embedding Provider（GLM/Embedding-3）+ Qdrant 混合检索落地：
+  - `app/knowledge/vector_index.py`：`knowledge_assets` 集合（cosine），UUID 稳定 point id，payload 存层/状态/visible_roles，user 角色过滤在 Qdrant 服务端执行；
+  - `retrieval.retrieve_hybrid`：Qdrant dense 召回 + 本地 n-gram sparse 召回经 RRF 融合；
+  - `scripts/sync_qdrant.py`：全量同步 + 孤儿清理；实测 31 资产入库；
+  - QA 端点 `backend` 字段：`hybrid`（异常自动回退 `local` 并如实上报）；
+  - Docker（WSL2 引擎）已部署；compose `restart: unless-stopped`。
+- M3 — pending — Reranker、Query Analytics、Knowledge Gap 持久化、BM25 替换 n-gram。
 
 ## 验证证据
 
-- 命令：`.scratch\venv312\Scripts\python.exe -m pytest` → 31 passed；真实实测脚本 `.scratch/tx-m2-fixes/demo_qa.py`（输出 demo-qa-output.txt）。
-- 结果：4 问全部 HTTP 200、答案 grounded、cites 正确、盲区正确报 gap。
-- 未覆盖：检索排序仍是占位（Qdrant 阶段优化）；gap 未持久化；无多轮/会话；未做检索质量指标集。
+- 命令：`python -m pytest` → 34 passed（Python 3.12 / 3.14；Qdrant 集成测试无 Qdrant 环境自动跳过）；`python scripts/sync_qdrant.py` → `synced items=31 upserted=31 deleted=0`；真实演示 `.scratch/tx-m2-fixes/demo-hybrid-output.txt`（hybrid vs local 检索对比 + QA `backend: hybrid` 实测）。
+- 结果：混合检索 top 命中正确（user/product/developer 各场景）；QA 引用全部为实际检索资产。
+- 未覆盖：BM25/Reranker/Analytics/gap 持久化未落地；检索质量指标集未建立；WSL2 Docker 引擎重启后需 `docker compose up -d`（已设 `restart: unless-stopped` 自动拉起容器）。
 
 ## 完成记录
 
