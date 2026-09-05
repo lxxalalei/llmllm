@@ -20,9 +20,11 @@ class Settings(BaseSettings):
     llm_provider: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None
+    llm_base_url: str | None = None
     embedding_model: str | None = None
     retrieval_backend: str = "hybrid"  # hybrid (Qdrant dense + local sparse) | local
     rerank: bool = True
+    intent_classify: bool = True
 
 
 @lru_cache

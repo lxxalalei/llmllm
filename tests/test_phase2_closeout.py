@@ -24,7 +24,7 @@ class _FakeResponder:
     def __init__(self, result: dict) -> None:
         self._result = result
 
-    async def answer(self, question, context):
+    async def answer(self, question, context, mode="grounded"):
         return self._result
 
     async def close(self) -> None:

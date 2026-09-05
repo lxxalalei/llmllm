@@ -14,8 +14,8 @@ class OpenAIEmbeddingProvider:
     """OpenAI-compatible /embeddings provider (e.g. GLM/Embedding-3 over the
     configured base URL). Shares the LLM credential/endpoint environment."""
 
-    def __init__(self, *, api_key: str, model: str) -> None:
-        self._client = AsyncOpenAI(api_key=api_key)
+    def __init__(self, *, api_key: str, model: str, base_url: str | None = None) -> None:
+        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = model
 
     async def embed(self, texts: list[str]) -> list[list[float]]:

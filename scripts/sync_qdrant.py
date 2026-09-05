@@ -32,7 +32,9 @@ async def main() -> None:
 
     catalog = KnowledgeCatalog.from_directory(args.knowledge_root)
     items = sorted(catalog._items.values(), key=lambda item: item.id)
-    embedder = OpenAIEmbeddingProvider(api_key=settings.llm_api_key, model=args.model)
+    embedder = OpenAIEmbeddingProvider(
+        api_key=settings.llm_api_key, model=args.model, base_url=settings.llm_base_url
+    )
     index = KnowledgeVectorIndex()
     try:
         if not await index.is_available():

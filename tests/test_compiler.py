@@ -1,6 +1,17 @@
 import asyncio
 
+import pytest
+
+from app.core.config import settings
 from app.workflows.compiler import build_compiler_graph
+
+
+@pytest.fixture(autouse=True)
+def _no_llm_provider(monkeypatch):
+    """Compiler tests assume no LLM is configured, independent of any local .env."""
+    monkeypatch.setattr(settings, "llm_provider", None)
+    monkeypatch.setattr(settings, "llm_api_key", None)
+    monkeypatch.setattr(settings, "llm_model", None)
 
 
 def test_compiler_does_not_claim_placeholder_generation() -> None:

@@ -61,6 +61,7 @@ class QueryLogRecord(Base):
     role: Mapped[str] = mapped_column(String(32), index=True)
     backend: Mapped[str] = mapped_column(String(32))
     reranked: Mapped[bool] = mapped_column(default=False)
+    intent: Mapped[str] = mapped_column(String(32), default="knowledge", index=True)
     retrieved: Mapped[str] = mapped_column(Text, default="[]")
     cites: Mapped[str] = mapped_column(Text, default="[]")
     gap: Mapped[bool] = mapped_column(default=False, index=True)

@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -10,6 +13,12 @@ app = FastAPI(
 )
 
 app.include_router(api_router)
+
+
+@app.get("/", include_in_schema=False, response_class=HTMLResponse)
+async def chat_index() -> str:
+    html_path = Path(__file__).parent / "web" / "chat.html"
+    return html_path.read_text(encoding="utf-8")
 
 
 @app.get("/health", tags=["system"])

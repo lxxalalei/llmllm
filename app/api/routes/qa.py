@@ -10,6 +10,7 @@ from app.knowledge import KnowledgeCatalog
 from app.knowledge.analytics import record_query
 from app.knowledge.models import UserRole
 from app.knowledge.embeddings import OpenAIEmbeddingProvider
+from app.knowledge.intents import LLMIntentClassifier
 from app.knowledge.qa import OpenAIQAResponder, answer_question
 from app.knowledge.rerank import LLMReranker
 from app.knowledge.vector_index import KnowledgeVectorIndex
@@ -38,18 +39,31 @@ class QaResponse(BaseModel):
     retrieved: list[str]
     backend: str
     reranked: bool
+    intent: str
 
 
 def _build_responder() -> OpenAIQAResponder | None:
     if settings.llm_provider != "openai" or not settings.llm_api_key or not settings.llm_model:
         return None
-    return OpenAIQAResponder(api_key=settings.llm_api_key, model=settings.llm_model)
+    return OpenAIQAResponder(
+        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+    )
 
 
 def _build_reranker() -> LLMReranker | None:
     if not settings.rerank or not settings.llm_api_key or not settings.llm_model:
         return None
-    return LLMReranker(api_key=settings.llm_api_key, model=settings.llm_model)
+    return LLMReranker(
+        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+    )
+
+
+def _build_intent_classifier() -> LLMIntentClassifier | None:
+    if not settings.intent_classify or not settings.llm_api_key or not settings.llm_model:
+        return None
+    return LLMIntentClassifier(
+        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+    )
 
 
 @router.post("", response_model=QaResponse)
@@ -65,9 +79,12 @@ async def qa(payload: QaRequest) -> QaResponse:
     embedder = None
     vector_index = None
     reranker = _build_reranker()
+    intent_classifier = _build_intent_classifier()
     if backend == "hybrid" and settings.embedding_model and settings.llm_api_key:
         embedder = OpenAIEmbeddingProvider(
-            api_key=settings.llm_api_key, model=settings.embedding_model
+            api_key=settings.llm_api_key,
+            model=settings.embedding_model,
+            base_url=settings.llm_base_url,
         )
         vector_index = KnowledgeVectorIndex()
     started = time.monotonic()
@@ -82,6 +99,7 @@ async def qa(payload: QaRequest) -> QaResponse:
             vector_index=vector_index,
             embedder=embedder,
             reranker=reranker,
+            intent_classifier=intent_classifier,
         )
     finally:
         await responder.close()
@@ -91,6 +109,8 @@ async def qa(payload: QaRequest) -> QaResponse:
             await vector_index.close()
         if reranker is not None:
             await reranker.close()
+        if intent_classifier is not None:
+            await intent_classifier.close()
 
     by_id = {item.id: item for item in catalog._items.values()}
     cites = [
@@ -112,6 +132,7 @@ async def qa(payload: QaRequest) -> QaResponse:
         retrieved=result["retrieved"],
         cites=[cite.id for cite in cites],
         gap=result["knowledge_gap"],
+        intent=result["intent"],
         latency_ms=latency_ms,
     )
     return QaResponse(
@@ -121,4 +142,5 @@ async def qa(payload: QaRequest) -> QaResponse:
         retrieved=result["retrieved"],
         backend=result["backend"],
         reranked=result["reranked"],
+        intent=result["intent"],
     )

@@ -13,6 +13,7 @@ async def record_query(
     role: str,
     backend: str,
     reranked: bool,
+    intent: str = "knowledge",
     retrieved: list[str],
     cites: list[str],
     gap: bool,
@@ -27,6 +28,7 @@ async def record_query(
                     role=role,
                     backend=backend,
                     reranked=reranked,
+                    intent=intent,
                     retrieved=json.dumps(retrieved, ensure_ascii=False),
                     cites=json.dumps(cites, ensure_ascii=False),
                     gap=gap,
@@ -67,6 +69,7 @@ def _row_dict(row: QueryLogRecord) -> dict[str, object]:
         "role": row.role,
         "backend": row.backend,
         "reranked": row.reranked,
+        "intent": row.intent,
         "retrieved": json.loads(row.retrieved or "[]"),
         "cites": json.loads(row.cites or "[]"),
         "gap": row.gap,
@@ -83,11 +86,13 @@ def summarize(rows: list[dict[str, object]]) -> dict[str, object]:
     for row in rows:
         retrieved_counter.update(row["retrieved"])
     backend_counter = Counter(str(row["backend"]) for row in rows)
+    intent_counter = Counter(str(row.get("intent", "knowledge")) for row in rows)
     return {
         "total": total,
         "gap_count": gap_count,
         "gap_rate": round(gap_count / total, 3) if total else 0.0,
         "backend_counts": dict(backend_counter),
+        "intent_counts": dict(intent_counter),
         "top_retrieved": [
             {"knowledge_id": knowledge_id, "count": count}
             for knowledge_id, count in retrieved_counter.most_common(5)

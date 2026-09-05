@@ -53,8 +53,8 @@ class _FakeResponder:
         self._result = result
         self.calls = []
 
-    async def answer(self, question, context):
-        self.calls.append((question, [hit.item.id for hit in context]))
+    async def answer(self, question, context, mode="grounded"):
+        self.calls.append((question, [hit.item.id for hit in context], mode))
         return self._result
 
     async def close(self) -> None:
@@ -82,6 +82,7 @@ def test_qa_endpoint_hardens_citations_and_reports_gap(monkeypatch) -> None:
     assert payload["cites"][0]["status"] == "published"
     assert "faq.mattermost.channel.create.limit" in payload["retrieved"]
     assert fake.calls and fake.calls[0][0] == "为什么我不能继续创建频道？"
+    assert fake.calls[0][2] == "grounded"
 
 
 def test_qa_endpoint_gap_flag_passthrough(monkeypatch) -> None:

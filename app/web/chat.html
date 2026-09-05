@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>llmllm 知识问答</title>
+<style>
+  :root { --bg:#0f1420; --panel:#171e2e; --line:#27334d; --text:#e6ebf5; --muted:#8b98ad; --accent:#4f8cff; --ok:#34c77b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:14px; }
+  header h1 { font-size:16px; margin:0; }
+  header .sub { color:var(--muted); font-size:12px; }
+  .spacer { flex:1; }
+  select, button { background:#223; }
+  #role { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 10px; }
+  #chat { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .msg { max-width:78%; padding:10px 14px; border-radius:12px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+  .user { align-self:flex-end; background:#2b3a5c; }
+  .bot { align-self:flex-start; background:var(--panel); border:1px solid var(--line); }
+  .meta { font-size:11px; color:var(--muted); margin-top:6px; }
+  .badge { display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; margin-right:6px; border:1px solid var(--line); }
+  .badge.hybrid { border-color:var(--accent); color:var(--accent); }
+  .badge.reranked { border-color:var(--ok); color:var(--ok); }
+  .badge.gap { border-color:#f0a35e; color:#f0a35e; }
+  .cite { font-size:12px; color:var(--muted); margin-top:4px; }
+  .cite span { margin-right:8px; }
+  #inputbar { padding:14px 20px; border-top:1px solid var(--line); display:flex; gap:10px; }
+  #question { flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:14px; }
+  #send { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 22px; cursor:pointer; font-size:14px; }
+  #send:disabled { opacity:.5; cursor:wait; }
+  .hint { color:var(--muted); font-size:11px; padding:0 20px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>llmllm 知识问答助手</h1>
+  <span class="sub">Mattermost Channel Creation · 角色化检索 + grounded 回答</span>
+  <span class="spacer"></span>
+  <select id="role" title="查看角色">
+    <option value="user">普通用户</option>
+    <option value="product">产品</option>
+    <option value="test">测试</option>
+    <option value="developer">开发</option>
+  </select>
+</header>
+<div id="chat">
+  <div class="msg bot">你好，我是知识问答助手。当前知识库覆盖：Mattermost 团队频道创建（类型/团队/数量上限/创建者行为）等已发布与角色可见内容。请选择你的角色后提问，例如「为什么我不能继续创建频道？」</div>
+</div>
+<div class="hint">回答仅基于检索到的知识资产；引用 id 显示在答案下方。切换角色可体验不同知识深度。</div>
+<div id="inputbar">
+  <input id="question" placeholder="输入你的问题…（Enter 发送）" autocomplete="off">
+  <button id="send">发送</button>
+</div>
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("question");
+const sendBtn = document.getElementById("send");
+const roleSel = document.getElementById("role");
+
+function addMsg(kind, html) {
+  const div = document.createElement("div");
+  div.className = "msg " + kind;
+  div.innerHTML = html;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function esc(s) { return s.replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;" }[c])); }
+
+async function ask() {
+  const q = input.value.trim();
+  if (!q) return;
+  const role = roleSel.value;
+  addMsg("user", esc(q));
+  input.value = "";
+  sendBtn.disabled = true;
+  const busy = document.createElement("div");
+  busy.className = "msg bot";
+  busy.textContent = "检索中…";
+  chat.appendChild(busy);
+  try {
+    const resp = await fetch("/api/v1/qa", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, role, top_k: 4 })
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error((err.detail || resp.status) + "");
+    }
+    const data = await resp.json();
+    const badges = [];
+    if (data.backend) badges.push(`<span class="badge ${data.backend === "hybrid" ? "hybrid" : ""}">${esc(data.backend)}</span>`);
+    if (data.reranked) badges.push('<span class="badge reranked">reranked</span>');
+    if (data.intent && data.intent !== "knowledge") badges.push('<span class="badge">intent:' + esc(data.intent) + '</span>');
+    if (data.knowledge_gap) badges.push('<span class="badge gap">知识缺口</span>');
+    const cites = (data.cites || []).map(c => `<span>📎 ${esc(c.id)} <i style="opacity:.7">[${esc(c.layer)}/${esc(c.status)}]</i></span>`).join("");
+    const retrieved = (data.retrieved || []).length
+      ? `<div class="meta">检索: ${data.retrieved.map(esc).join(" · ")}</div>` : "";
+    addMsg("bot", esc(data.answer || "") + `<div class="meta">${badges.join("")}</div>` +
+      (cites ? `<div class="cite">${cites}</div>` : "") + retrieved);
+  } catch (e) {
+    addMsg("bot", "请求失败：" + esc(String(e.message || e)));
+  } finally {
+    busy.remove();
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+sendBtn.addEventListener("click", ask);
+input.addEventListener("keydown", e => { if (e.key === "Enter") ask(); });
+input.focus();
+</script>
+</body>
+</html>

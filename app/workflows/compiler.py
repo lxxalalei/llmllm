@@ -52,7 +52,11 @@ def _configured_l1_generator() -> L1Generator | None:
         raise ValueError(f"unsupported LLM provider: {settings.llm_provider}")
     if not settings.llm_api_key or not settings.llm_model:
         raise ValueError("LLM_API_KEY and LLM_MODEL are required when LLM_PROVIDER=openai")
-    return L1Generator(OpenAIEngineeringFactExtractor(api_key=settings.llm_api_key, model=settings.llm_model))
+    return L1Generator(
+        OpenAIEngineeringFactExtractor(
+            api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+        )
+    )
 
 
 async def analyze_source(state: CompilerState) -> CompilerState:
