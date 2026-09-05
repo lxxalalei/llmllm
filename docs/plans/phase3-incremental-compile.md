@@ -52,6 +52,7 @@ Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 Sour
 - [x] 只有 L2 真正变化才把依赖它的 L3 列入 Review；不自动发布产品真相。
 - [x] 同名 Go method、缺失 source symbol、重复 Knowledge ID 等当前 parser 无法安全判定的情况显式失败，不静默丢事实。
 - [x] `scripts/regenerate_mattermost_change.py` 提供 Mattermost Channel Creation dry-run：读取知识基线与目标 commit，输出 L1/L2 diff + L3 Review JSON，不写 Markdown/Qdrant。
+- [x] dry-run 脚本测试覆盖 tracked file 未变化时无需 LLM，以及 tracked file rename 识别。
 - [ ] 使用一次真实 `channel.go` 上游变化执行模型 dry-run。目前 Mattermost master 相对知识基线虽有后续提交，但目标文件尚未变化。
 
 ## M3 — Publish and index refresh
@@ -60,6 +61,12 @@ Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 Sour
 - [ ] 更新 source commit / lineage。
 - [ ] 只刷新受影响检索资产；必要时保留全量 sync 作为修复工具。
 - [ ] 验证发布前后普通用户检索结果变化。
+
+## 验证证据
+
+- PR #4 最新 dry-run/文档收口前一版 CI #81 success；覆盖全部单元/业务测试。
+- Copilot 对同名 Go method、静默丢 carried fact、重复 Knowledge ID 的三条 review 均已修复并关闭 thread。
+- 当前 Mattermost master 相比知识基线向前推进，但 `server/channels/app/channel.go` 未变化，所以还不能声称完成真实模型增量运行。
 
 ## 非目标
 
