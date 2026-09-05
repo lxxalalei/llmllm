@@ -8,7 +8,7 @@
 - [系统架构](docs/architecture.md)
 - [实施路线图](docs/roadmap.md)
 - [开发计划约定](docs/plans/README.md)
-- [Mattermost Channel Creation 纵向验证](docs/plans/mattermost-channel-creation.md)
+- [Mattermost Channel Creation 纵向验证（已归档）](docs/plans/archive/mattermost-channel-creation.md)
 
 ## 核心模型
 

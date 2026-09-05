@@ -1,7 +1,7 @@
 # Mattermost Channel Creation 纵向验证
 
 - 状态：in_progress
-- 路线：[Phase 1 — 单模块纵向验证](../roadmap.md#phase-1--单模块纵向验证-in_progress)
+- 路线：[Phase 1 — 单模块纵向验证（completed，2026-09-05）](../../roadmap.md#phase-1--单模块纵向验证-completed)
 - 所有者：llmllm 项目
 - 依赖：公开可访问的 Mattermost 固定 ref；真实模型运行需要 LLM 凭据
 
@@ -113,11 +113,11 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 - [x] 开发可从 L2/L1 定位固定 ref 代码（SourceBinding repo/commit/file/symbol 经 API 暴露）。
 - [x] L4 可沿 lineage 追溯到代码 source。
 
-### M4 — pending
+### M4 — completed
 
-- [ ] 定位受影响 L1。
-- [ ] 沿关系找到受影响 L2/L3/L4。
-- [ ] 受影响知识进入 outdated/review 状态。
+- [x] 定位受影响 L1：可控样本唯一 modified symbol `CreateChannel` → 5 条绑定 L1（creator_membership / input_normalization / join_history / managed_category_gate / space_feature_flag）。
+- [x] 沿关系找到受影响 L2/L3/L4：反向 derived_from 闭包 21 个资产（+3 L2 / +3 L3 / +10 L4）。
+- [x] 受影响知识进入 outdated/review 状态：17 条迁移（8 L1/L2→outdated、team_channel published→review、8 L4 published→outdated）；目录副本 `--apply` 实测生效，正式资产未改动。
 
 ## 下一实施目标
 
@@ -144,4 +144,11 @@ M2（真实运行/基准对比/产品审核发布/补足 L4）与 M3（角色消
 
 ## 完成记录
 
-待 M4 完成后补充，并同步更新 `docs/roadmap.md`。
+Phase 1（M1–M4）于 2026-09-05 全部完成：
+
+- M1：固定输入与 Go/Python symbol 解析（CI）。
+- M2：12 条 L1 人工基准 + 4 L2 + L3/L4 资产；真实 Code→L1 运行两次（17/27 条预览，未入库）；与基准概念级对比 12/12 覆盖、无重复/归因错误、绑定 100% 通过；产品审核批准发布 L3 `team_channel`，派生发布 4 L4、新增 4 FAQ（Mattermost L4 = 10）。
+- M3：角色消费边界（user 仅 Published L3/L4；product/test 下钻；developer 代码定位）实现并测试。
+- M4：影响定位与过期传播实现（`app/knowledge/impact.py` + CLI），可控样本端到端验证 21 受影响 / 17 状态迁移，副本 apply 生效。
+
+剩余风险：真实模型输出切分粒度不稳定（17 vs 27）且为英文，入库前需固定策略；27 条生成预览未逐条复核；`shifted`（行漂移）只报告不传播，绑定行号自动修正未实现；Mattermost 自身 `go test` 未执行。后续主路线见 `docs/roadmap.md`（Phase 2）。
