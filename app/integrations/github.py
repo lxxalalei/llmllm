@@ -153,19 +153,21 @@ async def analyze_repository_change(
             old_source = ""
             new_source = ""
             if changed_file.status != "added":
-                old_source = await client.fetch_text(repository, baseline, old_path) or ""
-                if not old_source:
+                fetched_old = await client.fetch_text(repository, baseline, old_path)
+                if fetched_old is None:
                     raise ValueError(
                         f"cannot read old source {repository}@{baseline}:{old_path}"
                     )
+                old_source = fetched_old
             if changed_file.status != "removed":
-                new_source = await client.fetch_text(
+                fetched_new = await client.fetch_text(
                     repository, after, changed_file.path
-                ) or ""
-                if not new_source:
+                )
+                if fetched_new is None:
                     raise ValueError(
                         f"cannot read new source {repository}@{after}:{changed_file.path}"
                     )
+                new_source = fetched_new
 
             report = analyze_impact(
                 catalog,
