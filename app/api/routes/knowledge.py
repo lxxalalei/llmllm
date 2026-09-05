@@ -82,9 +82,25 @@ async def knowledge_lineage(knowledge_id: str, role: UserRole | None = None) -> 
     item = _get_visible(catalog, knowledge_id, role)
     try:
         lineage = catalog.trace_lineage(item.id)
-        sources = catalog.trace_sources(item.id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    if role is not None:
+        lineage = [node for node in lineage if role_allows(role, node)]
+
+    # SourceBinding is code-level evidence. Only collect bindings from lineage
+    # nodes the selected role can consume, so a user-visible FAQ cannot expose
+    # hidden L1/L2 code evidence through the lineage endpoint.
+    sources: list[SourceBinding] = []
+    seen: set[tuple[str, str | None, str | None, str, str | None]] = set()
+    for node in lineage:
+        for source in node.sources:
+            key = (source.repo, source.ref, source.commit, source.file, source.symbol)
+            if key in seen:
+                continue
+            seen.add(key)
+            sources.append(source)
+
     return KnowledgeLineageResponse(knowledge_id=knowledge_id, lineage=lineage, sources=sources)
 
 
