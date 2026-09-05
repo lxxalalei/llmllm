@@ -48,12 +48,25 @@ def _semantic_signature(item: KnowledgeItem) -> tuple[object, ...]:
     return tuple(signature)
 
 
+def _by_unique_id(
+    items: list[KnowledgeItem],
+    *,
+    label: str,
+) -> dict[str, KnowledgeItem]:
+    result: dict[str, KnowledgeItem] = {}
+    for item in items:
+        if item.id in result:
+            raise ValueError(f"duplicate knowledge id in {label}: {item.id}")
+        result[item.id] = item
+    return result
+
+
 def diff_items(
     before: list[KnowledgeItem],
     after: list[KnowledgeItem],
 ) -> list[KnowledgeChange]:
-    before_by_id = {item.id: item for item in before}
-    after_by_id = {item.id: item for item in after}
+    before_by_id = _by_unique_id(before, label="before set")
+    after_by_id = _by_unique_id(after, label="after set")
     changes: list[KnowledgeChange] = []
     for knowledge_id in sorted(set(before_by_id) | set(after_by_id)):
         old = before_by_id.get(knowledge_id)
@@ -293,11 +306,15 @@ async def regenerate_go_file_l1(
     carried: list[KnowledgeItem] = []
     for item in existing:
         source = _matching_source(item, repo=repo, file=old_file, commit=baseline)
-        if source.symbol in semantic_names or source.symbol is None:
+        if source.symbol is None:
+            raise ValueError(f"L1 source binding has no symbol: {item.id}")
+        if source.symbol in semantic_names:
             continue
         symbol = new_symbol_map.get(source.symbol)
         if symbol is None:
-            continue
+            raise ValueError(
+                f"bound symbol missing from new source without a detected removal: {source.symbol}"
+            )
         carried.append(
             _carry_forward(
                 item,
