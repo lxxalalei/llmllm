@@ -21,7 +21,7 @@ class GitHubPushPayload(BaseModel):
     before: CommitSha
     after: CommitSha
     repository: GitHubRepository
-    ref: str | None = None
+    ref: str = Field(min_length=1)
 
 
 @router.post("/github")
@@ -36,6 +36,11 @@ async def github_push(
             status_code=422,
             detail="initial branch push has no before commit to compare",
         )
+    if payload.after == "0" * 40:
+        raise HTTPException(
+            status_code=422,
+            detail="branch deletion push has no after commit to analyze",
+        )
 
     catalog = KnowledgeCatalog.from_directory(KNOWLEDGE_ROOT)
     client = GitHubSourceClient(token=settings.github_token)
@@ -45,6 +50,7 @@ async def github_push(
             repository=payload.repository.full_name,
             before=payload.before,
             after=payload.after,
+            ref=payload.ref,
             client=client,
         )
     finally:
