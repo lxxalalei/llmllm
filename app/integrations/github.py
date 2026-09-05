@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from urllib.parse import quote
 
@@ -75,16 +76,28 @@ class GitHubSourceClient:
         await self._client.aclose()
 
 
-def bound_source_files(catalog, repository: str, commit: str) -> set[str]:
-    """Files with current L1 facts bound to repository@commit."""
-    files: set[str] = set()
+def bound_source_baselines(catalog, repository: str) -> dict[str, str]:
+    """Current source commit for every L1-bound file in a repository.
+
+    Multiple L1 facts may point at the same file, but they must agree on the
+    baseline commit. If they do not, impact analysis cannot know which source
+    snapshot is authoritative and fails explicitly.
+    """
+    baselines: dict[str, str] = {}
     for item in catalog._items.values():
         if item.layer != KnowledgeLayer.L1_ENGINEERING_FACT:
             continue
         for source in item.sources:
-            if source.repo == repository and source.commit == commit:
-                files.add(source.file)
-    return files
+            if source.repo != repository or source.commit is None:
+                continue
+            current = baselines.get(source.file)
+            if current is not None and current != source.commit:
+                raise ValueError(
+                    f"multiple source commits for {repository}:{source.file}: "
+                    f"{current} vs {source.commit}"
+                )
+            baselines[source.file] = source.commit
+    return baselines
 
 
 async def analyze_repository_change(
@@ -95,82 +108,95 @@ async def analyze_repository_change(
     after: str,
     client: GitHubSourceClient,
 ) -> dict[str, object]:
-    """Read a GitHub compare range and produce a read-only knowledge impact report.
+    """Read GitHub changes from the knowledge baseline to `after`.
 
-    Canonical Markdown knowledge is deliberately not rewritten in the webhook
-    request. Regeneration/review/publish is the next Phase 3 boundary.
+    `before` is recorded from the push event, but impact analysis deliberately
+    starts from each L1 SourceBinding commit. This makes a later push able to
+    catch up if an earlier webhook delivery was missed.
+
+    Canonical Markdown knowledge is not rewritten here. Regeneration/review/
+    publish is the next Phase 3 boundary.
     """
-    tracked = bound_source_files(catalog, repository, before)
-    if not tracked:
+    baselines = bound_source_baselines(catalog, repository)
+    if not baselines:
         return {
             "repository": repository,
             "before": before,
             "after": after,
             "tracked_files": [],
+            "source_baselines": {},
             "files": [],
             "bound_l1": [],
             "affected": [],
             "transitions": [],
         }
 
-    changed = await client.compare_files(repository, before, after)
+    files_by_baseline: dict[str, set[str]] = defaultdict(set)
+    for file, baseline in baselines.items():
+        files_by_baseline[baseline].add(file)
+
     file_reports: list[dict[str, object]] = []
     bound_ids: set[str] = set()
     affected_ids: set[str] = set()
     transitions: dict[str, dict[str, str]] = {}
 
-    for changed_file in changed:
-        old_path = changed_file.previous_path or changed_file.path
-        binding_path = old_path if old_path in tracked else changed_file.path
-        if binding_path not in tracked:
-            continue
-        if not binding_path.endswith(".go"):
-            continue
+    for baseline, tracked_files in sorted(files_by_baseline.items()):
+        changed = await client.compare_files(repository, baseline, after)
+        for changed_file in changed:
+            old_path = changed_file.previous_path or changed_file.path
+            binding_path = old_path if old_path in tracked_files else changed_file.path
+            if binding_path not in tracked_files:
+                continue
+            if not binding_path.endswith(".go"):
+                continue
 
-        old_source = ""
-        new_source = ""
-        if changed_file.status != "added":
-            old_source = await client.fetch_text(repository, before, old_path) or ""
-            if not old_source:
-                raise ValueError(
-                    f"cannot read old source {repository}@{before}:{old_path}"
-                )
-        if changed_file.status != "removed":
-            new_source = await client.fetch_text(
-                repository, after, changed_file.path
-            ) or ""
-            if not new_source:
-                raise ValueError(
-                    f"cannot read new source {repository}@{after}:{changed_file.path}"
-                )
+            old_source = ""
+            new_source = ""
+            if changed_file.status != "added":
+                old_source = await client.fetch_text(repository, baseline, old_path) or ""
+                if not old_source:
+                    raise ValueError(
+                        f"cannot read old source {repository}@{baseline}:{old_path}"
+                    )
+            if changed_file.status != "removed":
+                new_source = await client.fetch_text(
+                    repository, after, changed_file.path
+                ) or ""
+                if not new_source:
+                    raise ValueError(
+                        f"cannot read new source {repository}@{after}:{changed_file.path}"
+                    )
 
-        report = analyze_impact(
-            catalog,
-            old_source,
-            new_source,
-            commit=before,
-            repo=repository,
-            file=binding_path,
-        )
-        file_reports.append(
-            {
-                "path": changed_file.path,
-                "previous_path": changed_file.previous_path,
-                "status": changed_file.status,
-                **report,
-            }
-        )
-        bound_ids.update(report["bound_l1"])
-        affected_ids.update(report["affected"])
-        for transition in report["transitions"]:
-            transitions[transition["id"]] = transition
+            report = analyze_impact(
+                catalog,
+                old_source,
+                new_source,
+                commit=baseline,
+                repo=repository,
+                file=binding_path,
+            )
+            file_reports.append(
+                {
+                    "path": changed_file.path,
+                    "previous_path": changed_file.previous_path,
+                    "status": changed_file.status,
+                    "baseline": baseline,
+                    "caught_up": baseline != before,
+                    **report,
+                }
+            )
+            bound_ids.update(report["bound_l1"])
+            affected_ids.update(report["affected"])
+            for transition in report["transitions"]:
+                transitions[transition["id"]] = transition
 
     return {
         "repository": repository,
         "before": before,
         "after": after,
-        "tracked_files": sorted(tracked),
-        "files": file_reports,
+        "tracked_files": sorted(baselines),
+        "source_baselines": dict(sorted(baselines.items())),
+        "files": sorted(file_reports, key=lambda item: (item["path"], item["baseline"])),
         "bound_l1": sorted(bound_ids),
         "affected": sorted(affected_ids),
         "transitions": [transitions[key] for key in sorted(transitions)],
