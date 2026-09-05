@@ -28,6 +28,17 @@ def _text_for(item: KnowledgeItem) -> str:
     return f"{item.title}\n{item.content}"
 
 
+def _payload(item: KnowledgeItem) -> dict[str, object]:
+    return {
+        "id": item.id,
+        "layer": item.layer.value,
+        "status": item.status.value,
+        "module": item.module,
+        "feature": item.feature,
+        "visible_roles": [role.value for role in item.visible_roles],
+    }
+
+
 def role_filter(role: UserRole) -> Filter:
     """Qdrant-side role gate mirroring views.role_allows."""
     must = [FieldCondition(key="visible_roles", match=MatchValue(value=role.value))]
@@ -39,7 +50,8 @@ def role_filter(role: UserRole) -> Filter:
 
 class KnowledgeVectorIndex:
     """Qdrant index over knowledge assets. Qdrant is an index, not the source of
-    truth: full re-sync from the knowledge/ catalog keeps it consistent."""
+    truth: full or incremental sync always starts from canonical knowledge assets.
+    """
 
     def __init__(self, collection_name: str = COLLECTION) -> None:
         self._client = AsyncQdrantClient(
@@ -64,40 +76,72 @@ class KnowledgeVectorIndex:
                 vectors_config=VectorParams(size=dimension, distance=Distance.COSINE),
             )
 
-    async def replace_all(self, items: list[KnowledgeItem], embedder: EmbeddingProvider, batch: int = 32) -> dict[str, int]:
-        """Full re-sync: embed catalog assets, upsert points, drop orphans."""
+    async def upsert_items(
+        self,
+        items: list[KnowledgeItem],
+        embedder: EmbeddingProvider,
+        batch: int = 32,
+    ) -> dict[str, int]:
+        """Refresh only the supplied canonical knowledge items."""
+        if not items:
+            return {"embedded": 0, "upserted": 0}
+
         texts = [_text_for(item) for item in items]
         vectors: list[list[float]] = []
         for start in range(0, len(texts), batch):
             vectors.extend(await embedder.embed(texts[start : start + batch]))
-        if not vectors:
-            return {"embedded": 0, "upserted": 0, "deleted": 0}
-        dimension = len(vectors[0])
-        await self.ensure_collection(dimension)
+        if len(vectors) != len(items):
+            raise ValueError("embedding provider returned unexpected vector count")
 
-        points = []
-        for item, vector in zip(items, vectors):
-            payload = {
-                "id": item.id,
-                "layer": item.layer.value,
-                "status": item.status.value,
-                "module": item.module,
-                "feature": item.feature,
-                "visible_roles": [role.value for role in item.visible_roles],
-            }
-            points.append(
-                PointStruct(id=_point_uuid(item.id), vector=vector, payload=payload)
+        await self.ensure_collection(len(vectors[0]))
+        points = [
+            PointStruct(
+                id=_point_uuid(item.id),
+                vector=vector,
+                payload=_payload(item),
             )
+            for item, vector in zip(items, vectors)
+        ]
         await self._client.upsert(collection_name=self._collection, points=points)
+        return {"embedded": len(items), "upserted": len(points)}
 
+    async def delete_ids(self, knowledge_ids: list[str]) -> int:
+        """Delete published-index points for canonical knowledge that was removed."""
+        if not knowledge_ids:
+            return 0
+        point_ids = [str(_point_uuid(knowledge_id)) for knowledge_id in knowledge_ids]
+        await self._client.delete(
+            collection_name=self._collection,
+            points_selector=point_ids,
+        )
+        return len(point_ids)
+
+    async def replace_all(
+        self,
+        items: list[KnowledgeItem],
+        embedder: EmbeddingProvider,
+        batch: int = 32,
+    ) -> dict[str, int]:
+        """Full re-sync: embed catalog assets, upsert points, drop orphans."""
+        if not items:
+            return {"embedded": 0, "upserted": 0, "deleted": 0}
+
+        synced = await self.upsert_items(items, embedder, batch=batch)
         existing = await self._scroll_ids()
         local_ids = {str(_point_uuid(item.id)) for item in items}
         orphans = [point_id for point_id in existing if point_id not in local_ids]
         deleted = 0
         if orphans:
             deleted = len(orphans)
-            await self._client.delete(collection_name=self._collection, points_selector=orphans)
-        return {"embedded": len(items), "upserted": len(points), "deleted": deleted}
+            await self._client.delete(
+                collection_name=self._collection,
+                points_selector=orphans,
+            )
+        return {
+            "embedded": synced["embedded"],
+            "upserted": synced["upserted"],
+            "deleted": deleted,
+        }
 
     async def _scroll_ids(self) -> list[str]:
         ids: list[str] = []
