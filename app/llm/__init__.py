@@ -1,3 +1,3 @@
-from app.llm.openai_provider import OpenAIEngineeringFactExtractor
+from app.llm.openai_provider import OpenAIEngineeringFactExtractor, OpenAIEngineeringRuleExtractor
 
-__all__ = ["OpenAIEngineeringFactExtractor"]
+__all__ = ["OpenAIEngineeringFactExtractor", "OpenAIEngineeringRuleExtractor"]

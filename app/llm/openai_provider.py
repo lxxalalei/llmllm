@@ -4,6 +4,7 @@ from openai import AsyncOpenAI
 
 from app.code_index import Symbol
 from app.knowledge.l1_generator import EngineeringFactBatch
+from app.knowledge.l2_generator import EngineeringRuleBatch
 from app.knowledge.models import KnowledgeItem
 
 
@@ -100,4 +101,66 @@ class OpenAIEngineeringFactExtractor:
 
     async def close(self) -> None:
         """Close the underlying HTTP client (required before asyncio loop shutdown)."""
+        await self._client.close()
+
+
+class OpenAIEngineeringRuleExtractor:
+    """Synthesize L2 engineering rules from the current L1 feature scope."""
+
+    def __init__(self, *, api_key: str, model: str, base_url: str | None = None) -> None:
+        self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+        self._model = model
+
+    async def extract(
+        self,
+        facts: list[KnowledgeItem],
+        existing_rules: list[KnowledgeItem],
+    ) -> EngineeringRuleBatch:
+        if not facts:
+            return EngineeringRuleBatch(rules=[])
+
+        fact_blocks = [
+            f"ID: {item.id}\nTITLE: {item.title}\nFACT: {_statement(item)}"
+            for item in facts
+        ]
+        existing_block = ""
+        if existing_rules:
+            rule_blocks = []
+            for item in existing_rules:
+                key = item.id.rsplit(".", 1)[-1]
+                rule_blocks.append(
+                    f"KEY: {key}\nTITLE: {item.title}\nRULE: {_statement(item)}\n"
+                    f"DERIVED_FROM: {', '.join(item.derived_from)}"
+                )
+            existing_block = (
+                "\n\nEXISTING L2 RULES FROM THE PREVIOUS KNOWLEDGE VERSION:\n"
+                + "\n\n".join(rule_blocks)
+            )
+
+        response = await self._client.responses.create(
+            model=self._model,
+            instructions=(
+                "You synthesize L2 engineering rules from supplied L1 engineering facts. "
+                "Rules are developer-facing technical/domain rules, not product intent or user documentation. "
+                "Every derived_from id must be one of the supplied L1 IDs. "
+                "Existing rules are from the previous knowledge version. "
+                "If the same engineering rule remains supported, reuse its exact existing KEY. "
+                "Omit rules no longer supported and add a new key only for a genuinely new rule. "
+                "Prefer a small set of useful, non-duplicative rules."
+            ),
+            input="CURRENT L1 FACTS:\n\n" + "\n\n".join(fact_blocks) + existing_block,
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "engineering_rule_batch",
+                    "schema": EngineeringRuleBatch.model_json_schema(),
+                    "strict": True,
+                }
+            },
+        )
+        if not response.output_text:
+            raise ValueError("OpenAI returned no structured engineering rules")
+        return EngineeringRuleBatch.model_validate_json(response.output_text)
+
+    async def close(self) -> None:
         await self._client.close()

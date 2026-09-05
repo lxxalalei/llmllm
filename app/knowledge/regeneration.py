@@ -4,8 +4,13 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.code_index import GoCodeParser, Symbol
-from app.knowledge.impact import changed_symbols
-from app.knowledge.models import KnowledgeItem, KnowledgeLayer, SourceBinding
+from app.knowledge.impact import changed_symbols, upstream_items
+from app.knowledge.models import (
+    KnowledgeItem,
+    KnowledgeLayer,
+    KnowledgeStatus,
+    SourceBinding,
+)
 
 
 ChangeKind = Literal["unchanged", "changed", "added", "removed"]
@@ -36,11 +41,14 @@ def _statement(item: KnowledgeItem) -> str:
     return "\n".join(lines).strip()
 
 
-def _semantic_signature(item: KnowledgeItem) -> tuple[str, str]:
-    return item.title.strip(), _statement(item)
+def _semantic_signature(item: KnowledgeItem) -> tuple[object, ...]:
+    signature: list[object] = [item.title.strip(), _statement(item)]
+    if item.layer == KnowledgeLayer.L2_ENGINEERING_RULE:
+        signature.append(tuple(item.derived_from))
+    return tuple(signature)
 
 
-def diff_l1(
+def diff_items(
     before: list[KnowledgeItem],
     after: list[KnowledgeItem],
 ) -> list[KnowledgeChange]:
@@ -60,6 +68,13 @@ def diff_l1(
             kind = "changed"
         changes.append(KnowledgeChange(knowledge_id, kind, old, new))
     return changes
+
+
+def diff_l1(
+    before: list[KnowledgeItem],
+    after: list[KnowledgeItem],
+) -> list[KnowledgeChange]:
+    return diff_items(before, after)
 
 
 def _namespace_from_id(knowledge_id: str) -> str:
@@ -166,16 +181,61 @@ def _version_generated(
         old = existing_by_id.get(item.id)
         if old is None:
             result.append(item)
+            continue
+        updates: dict[str, object] = {
+            "version": old.version,
+            "created_at": old.created_at,
+        }
+        if _semantic_signature(old) == _semantic_signature(item):
+            updates["status"] = old.status
         else:
-            result.append(
-                item.model_copy(
-                    update={
-                        "version": old.version + 1,
-                        "created_at": old.created_at,
-                    }
-                )
-            )
+            updates["version"] = old.version + 1
+        result.append(item.model_copy(update=updates))
     return result
+
+
+def _feature_l1(catalog, *, module: str, feature: str) -> list[KnowledgeItem]:
+    return sorted(
+        [
+            item
+            for item in catalog._items.values()
+            if item.layer == KnowledgeLayer.L1_ENGINEERING_FACT
+            and item.module == module
+            and item.feature == feature
+        ],
+        key=lambda item: item.id,
+    )
+
+
+def _feature_l2(catalog, *, module: str, feature: str) -> list[KnowledgeItem]:
+    return sorted(
+        [
+            item
+            for item in catalog._items.values()
+            if item.layer == KnowledgeLayer.L2_ENGINEERING_RULE
+            and item.module == module
+            and item.feature == feature
+        ],
+        key=lambda item: item.id,
+    )
+
+
+def _replace_file_l1(
+    catalog,
+    *,
+    module: str,
+    feature: str,
+    old_file_items: list[KnowledgeItem],
+    new_file_items: list[KnowledgeItem],
+) -> list[KnowledgeItem]:
+    replaced_ids = {item.id for item in old_file_items}
+    current = [
+        item
+        for item in _feature_l1(catalog, module=module, feature=feature)
+        if item.id not in replaced_ids
+    ]
+    current.extend(new_file_items)
+    return sorted(current, key=lambda item: item.id)
 
 
 async def regenerate_go_file_l1(
@@ -251,7 +311,7 @@ async def regenerate_go_file_l1(
         )
 
     new_items = sorted([*carried, *generated], key=lambda item: item.id)
-    changes = diff_l1(existing, new_items)
+    changes = diff_items(existing, new_items)
     return {
         "repo": repo,
         "baseline": baseline,
@@ -273,4 +333,84 @@ async def regenerate_go_file_l1(
             for change in changes
         ],
         "l1_items": [item.model_dump(mode="json") for item in new_items],
+    }
+
+
+async def regenerate_go_file(
+    *,
+    catalog,
+    repo: str,
+    baseline: str,
+    after: str,
+    old_file: str,
+    new_file: str,
+    old_source: str,
+    new_source: str,
+    l1_generator,
+    l2_generator,
+) -> dict[str, object]:
+    """Run Phase 3 M2 for one changed Go file through L2 and L3 review routing."""
+    report = await regenerate_go_file_l1(
+        catalog=catalog,
+        repo=repo,
+        baseline=baseline,
+        after=after,
+        old_file=old_file,
+        new_file=new_file,
+        old_source=old_source,
+        new_source=new_source,
+        l1_generator=l1_generator,
+    )
+    scope = report["scope"]
+    new_file_l1 = [
+        KnowledgeItem.model_validate(item) for item in report["l1_items"]
+    ]
+    old_file_l1 = file_l1_items(
+        catalog, repo=repo, file=old_file, commit=baseline
+    )
+    current_l1 = _replace_file_l1(
+        catalog,
+        module=scope["module"],
+        feature=scope["feature"],
+        old_file_items=old_file_l1,
+        new_file_items=new_file_l1,
+    )
+    existing_l2 = _feature_l2(
+        catalog, module=scope["module"], feature=scope["feature"]
+    )
+
+    l1_semantic_change = any(
+        item["change"] != "unchanged" for item in report["l1_changes"]
+    )
+    if l1_semantic_change:
+        generated_l2 = await l2_generator.generate(
+            namespace=scope["namespace"],
+            module=scope["module"],
+            feature=scope["feature"],
+            l1_items=current_l1,
+            existing_items=existing_l2,
+        )
+        generated_l2 = _version_generated(generated_l2, existing_l2)
+    else:
+        generated_l2 = existing_l2
+
+    l2_changes = diff_items(existing_l2, generated_l2)
+    changed_l2_ids = [
+        change.id for change in l2_changes if change.change != "unchanged"
+    ]
+    l3_review = [
+        item.id
+        for item in upstream_items(catalog, changed_l2_ids)
+        if item.layer == KnowledgeLayer.L3_PRODUCT_LOGIC
+        and item.status != KnowledgeStatus.DEPRECATED
+    ]
+
+    return {
+        **report,
+        "l2_changes": [
+            {"id": change.id, "change": change.change}
+            for change in l2_changes
+        ],
+        "l2_items": [item.model_dump(mode="json") for item in generated_l2],
+        "l3_review": sorted(set(l3_review)),
     }
