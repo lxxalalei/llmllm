@@ -73,21 +73,39 @@ def _l3(item_id: str, l2_id: str) -> KnowledgeItem:
     )
 
 
+def _l4(item_id: str, l3_id: str) -> KnowledgeItem:
+    return KnowledgeItem(
+        id=item_id,
+        title="User answer",
+        layer=KnowledgeLayer.L4_USER_KNOWLEDGE,
+        module="demo.channel",
+        feature="creation",
+        content="published user answer",
+        status=KnowledgeStatus.PUBLISHED,
+        derived_from=[l3_id],
+        visible_roles=[UserRole.USER, UserRole.PRODUCT, UserRole.TEST, UserRole.DEVELOPER],
+    )
+
+
 def test_publish_plan_is_dry_run_until_applied(tmp_path: Path) -> None:
     root = tmp_path / "knowledge"
     l1_id = "eng.demo.channel.create.fact"
     l2_id = "eng.demo.channel.create.rule"
     l3_id = "product.demo.channel.create.behavior"
+    l4_id = "faq.demo.channel.create.answer"
 
     l1_path = root / "l1-engineering-facts/demo/creation/fact.md"
     l2_path = root / "l2-engineering-rules/demo/creation/rule.md"
     l3_path = root / "l3-product-logic/demo/creation/behavior.md"
+    l4_path = root / "l4-user-knowledge/demo/creation/answer.md"
     _write(l1_path, _l1(l1_id))
     _write(l2_path, _l2(l2_id, l1_id))
     _write(l3_path, _l3(l3_id, l2_id))
+    _write(l4_path, _l4(l4_id, l3_id))
 
     original_l1 = l1_path.read_text(encoding="utf-8")
     original_l3 = l3_path.read_text(encoding="utf-8")
+    original_l4 = l4_path.read_text(encoding="utf-8")
     new_l1 = _l1(l1_id, commit="c2")
     new_l2 = _l2(l2_id, l1_id, content="updated rule", version=2)
     preview = {
@@ -102,18 +120,21 @@ def test_publish_plan_is_dry_run_until_applied(tmp_path: Path) -> None:
 
     assert l1_path.read_text(encoding="utf-8") == original_l1
     assert l3_path.read_text(encoding="utf-8") == original_l3
-    assert {write.item.id for write in plan.writes} == {l1_id, l2_id, l3_id}
-    assert set(plan.index_upsert_ids) == {l1_id, l2_id, l3_id}
+    assert l4_path.read_text(encoding="utf-8") == original_l4
+    assert {write.item.id for write in plan.writes} == {l1_id, l2_id, l3_id, l4_id}
+    assert set(plan.index_upsert_ids) == {l1_id, l2_id, l3_id, l4_id}
 
     apply_publish_plan(plan)
 
     published_l1 = load_knowledge_file(l1_path)
     published_l2 = load_knowledge_file(l2_path)
     published_l3 = load_knowledge_file(l3_path)
+    published_l4 = load_knowledge_file(l4_path)
     assert published_l1.sources[0].commit == "c2"
     assert "updated rule" in published_l2.content
     assert published_l2.version == 2
     assert published_l3.status == KnowledgeStatus.REVIEW
+    assert published_l4.status == KnowledgeStatus.OUTDATED
 
 
 def test_publish_adds_and_removes_git_backed_knowledge_files(tmp_path: Path) -> None:
