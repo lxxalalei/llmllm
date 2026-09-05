@@ -5,6 +5,7 @@ from app.api.routes.compiler import router as compiler_router
 from app.api.routes.knowledge import router as knowledge_router
 from app.api.routes.qa import router as qa_router
 from app.api.routes.system import router as system_router
+from app.api.routes.webhooks import router as webhooks_router
 
 api_router = APIRouter()
 api_router.include_router(system_router)
@@ -12,3 +13,4 @@ api_router.include_router(knowledge_router, prefix="/api/v1/knowledge", tags=["k
 api_router.include_router(compiler_router, prefix="/api/v1/compiler", tags=["compiler"])
 api_router.include_router(qa_router, prefix="/api/v1/qa", tags=["qa"])
 api_router.include_router(analytics_router, prefix="/api/v1/analytics", tags=["analytics"])
+api_router.include_router(webhooks_router, prefix="/api/v1/webhooks", tags=["webhooks"])

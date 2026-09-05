@@ -52,9 +52,13 @@ def changed_symbols(old_source: str, new_source: str) -> list[SymbolChange]:
 
 
 def bound_l1_items(
-    catalog, symbol: str, commit: str | None = None
+    catalog,
+    symbol: str,
+    commit: str | None = None,
+    repo: str | None = None,
+    file: str | None = None,
 ) -> list[KnowledgeItem]:
-    """L1 engineering facts bound to the changed code symbol."""
+    """L1 engineering facts bound to the changed source identity."""
     result = []
     for item in catalog._items.values():
         if item.layer != KnowledgeLayer.L1_ENGINEERING_FACT:
@@ -63,6 +67,10 @@ def bound_l1_items(
             if source.symbol != symbol:
                 continue
             if commit is not None and source.commit != commit:
+                continue
+            if repo is not None and source.repo != repo:
+                continue
+            if file is not None and source.file != file:
                 continue
             result.append(item)
             break
@@ -124,6 +132,8 @@ def analyze_impact(
     old_source: str,
     new_source: str,
     commit: str | None = None,
+    repo: str | None = None,
+    file: str | None = None,
 ) -> dict[str, object]:
     """Locate changed symbols, bound L1 facts, and the affected upstream set."""
     changes = changed_symbols(old_source, new_source)
@@ -131,7 +141,13 @@ def analyze_impact(
     for change in changes:
         if change.change == "shifted":
             continue
-        for item in bound_l1_items(catalog, change.name, commit=commit):
+        for item in bound_l1_items(
+            catalog,
+            change.name,
+            commit=commit,
+            repo=repo,
+            file=file,
+        ):
             if item not in bound:
                 bound.append(item)
     affected = upstream_items(catalog, [item.id for item in bound])

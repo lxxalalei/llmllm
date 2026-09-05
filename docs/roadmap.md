@@ -6,10 +6,10 @@
 
 - 当前主路线：`Phase 3 — 增量知识编译`（Phase 2 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`Phase 2 — 检索与问答`（completed，2026-09-05：M1 问答闭环 + M2 Qdrant 混合检索 + M3 BM25/Reranker/Analytics/Gap 持久化）
+- 当前里程碑：`M1 — Git change intake`
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项（Phase 3 首闭环）：Git Webhook / 变更检测接入——代码变更后自动定位 changed symbol、调用 M4 影响分析、按需增量重生成并同步 Qdrant 索引（利用 `app/knowledge/impact.py` 与 `scripts/sync_qdrant.py`）。
-- 当前阻塞：无（Phase 1 全里程碑完成，2026-09-05）。CI 不执行外部付费模型调用。
+- 下一验收项：使用一个可控 GitHub push 做真实外部事件验证；验证通过后进入 M2，仅对受影响 symbol 增量重生成 L1/L2，并把 L3 变化送入 Review。
+- 当前阻塞：无。CI 不执行外部付费模型调用；真实 GitHub delivery 尚未验证，不将 mock/fake client 测试描述成外部端到端链路。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -76,7 +76,7 @@
 - 一次真实 CI 失败暴露 Markdown 资产缺少结构化 `title`；当前规则为 frontmatter `title` 或 Markdown H1，二者都缺失时直接失败。
 - 真实 `Code → L1` 运行（2026-09-05）：固定 Mattermost checkout `43b2ae8`，OpenAI 兼容 Responses 端点 + Structured Outputs；修复 harness 后官方脚本直接运行 exit 0。与 12 条人工基准做概念级对比：12/12 覆盖、无重复、无错误归因、repo/commit/file/symbol/行范围绑定 100% 通过。细节见 `docs/plans/archive/mattermost-channel-creation.md`。
 - 工具链修复（2026-09-05）：tree-sitter 收紧至 `<0.26`（0.26.0 与 tree-sitter-go 0.25.0 ABI 不兼容，真实文件解析产生越界行号/字节偏移）；extractor 增加 `close()`，生成脚本运行后显式关闭客户端（修复 Python 3.14 下 asyncio 收尾访问违例）；脚本 `file` 绑定改用 `as_posix()`，与资产目录路径格式一致。
-- 角色消费边界（M3，2026-09-05）：`GET /api/v1/knowledge?role=...`、详情/lineage/drill 端点支持 `role` 门控（不可见统一 404，防枚举）；`app/knowledge/views.py` 显式编码角色策略；`tests/test_role_views.py` 覆盖 user/product/test/developer 边界与下钻。
+- 角色消费边界（M3，2026-09-05）：`GET /api/v1/knowledge?role=...`、详情/lineage/drill 端点支持 `role` 门控（不可见统一 404，防枚举）；`app/knowledge/views.py` 显式编码角色策略；`tests/test_role_views.py` 覆盖 user/product/test/developer 边界与下钻。Phase 3 开始前补充了 lineage 内部节点和 SourceBinding 的二次角色过滤，避免 user 从合法 FAQ 穿透到隐藏 L1/L2/code evidence。
 - 影响定位与过期传播（M4，2026-09-05）：`app/knowledge/impact.py`（changed-symbol 检测按内容 hash，行漂移记为 shifted 不传播；绑定 L1 定位；反向 derived_from 闭包；状态建议 L1/L2→outdated、L3 published→review、L4 published→outdated）；`scripts/analyze_code_impact.py` dry-run/--apply；`tests/test_impact.py`。端到端报告：`.scratch/m4/impact-report.json`。
 
 ## Phase 2 — 检索与问答 (`completed`)
@@ -97,15 +97,22 @@
 
 Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embedding Provider）、`app/knowledge/vector_index.py`（Qdrant 索引：UUID 稳定 point id、payload 含层/状态/可见角色、角色过滤在服务端执行、全量同步孤儿清理）、`retrieval.retrieve_hybrid`（dense+sparse RRF）、`scripts/sync_qdrant.py`。真实同步 31 个资产 → `knowledge_assets`；QA 实测 `backend: hybrid` 回答正确且引用真实。本机 Docker（WSL2 引擎）已部署，compose 服务 `restart: unless-stopped`。
 
-## Phase 3 — 增量知识编译 (`pending`)
+## Phase 3 — 增量知识编译 (`in_progress`)
 
-- Git Webhook
-- Diff Analyzer
-- Changed Symbol Detection
-- Impact Propagation
-- L1/L2 自动更新
-- L3 Review Queue
-- L4 自动再生成
+实施计划：[Phase 3 增量知识编译](plans/phase3-incremental-compile.md)
+
+- [x] Git Webhook / change intake：`POST /api/v1/webhooks/github` 接受 push，读取 GitHub compare。
+- [x] Diff Analyzer：只处理当前 `repository@before` 已有 L1 SourceBinding 的文件，并拉取 before/after 源码。
+- [x] Changed Symbol Detection：沿用 Phase 1 的 symbol content hash；行漂移 `shifted` 不传播。
+- [x] Impact Propagation：L1 定位收紧到 `repo + commit + file + symbol`，再沿 `derived_from` 反向闭包生成影响报告。
+- [ ] L1/L2 自动更新
+- [ ] L3 Review Queue
+- [ ] L4 自动再生成
+- [ ] Review/Publish 后增量刷新 Qdrant
+
+M1 验证（2026-09-05）：PR #3 CI run #42 success。测试覆盖 lineage 角色穿透、同名 symbol 跨文件误传播、tracked source 过滤、无绑定 commit 不触发远端 compare、Webhook 非 push 与初始 branch push 边界。该证据是代码/接口级验证，尚未完成真实 GitHub Webhook delivery。
+
+当前原则：Webhook 只生成 impact report，不直接改写正式 Markdown/Git 知识资产，也不直接修改 Qdrant；增量生成、Review、Publish 后再更新 canonical knowledge 和搜索索引。
 
 ## Phase 4 — 企业化 (`pending`)
 
