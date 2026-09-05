@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     retrieval_backend: str = "hybrid"  # hybrid (Qdrant dense + local sparse) | local
     rerank: bool = True
     intent_classify: bool = True
+    github_token: str | None = None
 
 
 @lru_cache
