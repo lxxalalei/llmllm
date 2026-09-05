@@ -8,6 +8,7 @@
 - [系统架构](docs/architecture.md)
 - [实施路线图](docs/roadmap.md)
 - [开发计划约定](docs/plans/README.md)
+- [Mattermost Channel Creation 纵向验证](docs/plans/mattermost-channel-creation.md)
 
 ## 核心模型
 
@@ -23,7 +24,7 @@ L3 Product Logic
 L4 User Knowledge / FAQ
 ```
 
-知识生产和知识消费分离：
+知识生产与知识消费分离：
 
 ```text
 Knowledge Build Plane              Knowledge Serve Plane
@@ -42,41 +43,69 @@ Git + PostgreSQL + Qdrant
 - PostgreSQL：知识元数据、关系、版本、来源绑定
 - Qdrant：语义/关键词混合检索索引
 - LangGraph：知识生产与更新工作流
-- Tree-sitter：代码结构分析
+- Tree-sitter：代码结构分析，目前支持 Python / Go
 - FastAPI：服务接口
 - Pydantic：知识 Schema
 
 ## 当前阶段
 
-当前仓库是 V1 bootstrap，目标是先跑通一个真实模块的完整纵向链路：
+Phase 1 正在使用 Mattermost 的真实 `Channel Creation` 代码验证完整知识链。
+
+固定样本：
 
 ```text
-代码 → L1 → L2 → L3 → L4 → 问答 → 代码变更 → 影响分析 → 增量更新
+repo: mattermost/mattermost
+commit: 43b2ae87e06b06abe01f9382ec26899c54c31728
+file: server/channels/app/channel.go
+symbols:
+  - CreateChannelWithUser
+  - CreateChannel
 ```
 
-当前已完成：
+当前已经形成：
 
-- FastAPI 应用骨架
-- L1-L4 KnowledgeItem 领域模型
-- SourceBinding / Relation 基础模型
-- LangGraph 知识编译流程骨架
-- Python Tree-sitter 解析器
-- PostgreSQL 基础表结构
-- Qdrant 客户端与健康检查
-- 示例 L3/L4 知识资产
-- Docker Compose 本地基础设施
-- 基础测试与 CI
+- 12 个真实 L1 Engineering Facts 人工基准
+- 4 个 L2 Engineering Rules 草稿
+- 3 个 L3 Product Logic，状态为 `review`
+- 6 个 L4 FAQ 草稿
+- Go/Python Tree-sitter symbol parser
+- Compiler Preview 可解析实际 Go/Python 源码内容并返回 symbol
+- OpenAI Structured Outputs `Code → L1` 生成器
+- L1 SourceBinding 由代码侧绑定，模型不能自行声明 repo/ref/file/line
+- 本地 Mattermost 固定 commit 生成验证脚本
+- Markdown + YAML Knowledge Catalog
+- L4 → L3 → L2 → L1 → Code 的递归 lineage
+- Knowledge Item / Lineage API
 
-当前未实现：
+Mattermost 的 L3/L4 当前没有标记为 `published`。代码实现是证据，不自动等于已经确认的产品规则。
 
-- 真实 LLM Provider
-- Embedding / BM25 / Hybrid Search
-- 代码变更影响分析
-- Git Webhook
-- 企业 SSO / IAM
-- 人工审核后台
+### 实际运行 Code → L1
 
-这些属于下一阶段，不在 bootstrap 中伪实现。
+准备一个处于固定 commit 的 Mattermost checkout，并配置：
+
+```bash
+export LLM_PROVIDER=openai
+export LLM_MODEL=<支持 Structured Outputs 的模型>
+export LLM_API_KEY=<your key>
+```
+
+然后：
+
+```bash
+python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/mattermost-l1.json
+```
+
+脚本会拒绝错误 commit、目标源码本地改动、缺失目标 symbol 或缺少模型配置，不会把不匹配的源码标记成固定版本证据。
+
+当前尚未在仓库 CI 中执行真实模型调用，因为 CI 没有配置 API Key。现有 12 条 L1 继续作为真实模型输出的人工基准集。
+
+## API
+
+- `GET /health`
+- `GET /ready`
+- `POST /api/v1/compiler/preview`
+- `GET /api/v1/knowledge/{knowledge_id}`
+- `GET /api/v1/knowledge/{knowledge_id}/lineage`
 
 ## 本地启动
 
@@ -88,26 +117,8 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env
-uvicorn app.main:app --reload
-```
-
-接口：
-
-- `GET /health`
-- `GET /ready`
-- `GET /api/v1/knowledge/example`
-- `POST /api/v1/compiler/preview`
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/compiler/preview \
-  -H 'Content-Type: application/json' \
-  -d '{"source":"conversation/archive_service.py"}'
-```
-
-运行测试：
-
-```bash
 pytest
+uvicorn app.main:app --reload
 ```
 
 ## 设计原则

@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import tree_sitter_python
+import tree_sitter_go
 from tree_sitter import Language, Parser
 
 from app.code_index.models import Symbol
 
 
-class PythonCodeParser:
-    """Tree-sitter adapter for Python source files."""
+class GoCodeParser:
+    """Tree-sitter adapter for top-level Go functions and methods."""
 
     def __init__(self) -> None:
-        language = Language(tree_sitter_python.language())
+        language = Language(tree_sitter_go.language())
         try:
             self._parser = Parser(language)
         except TypeError:
@@ -23,7 +23,7 @@ class PythonCodeParser:
         symbols: list[Symbol] = []
 
         for node in tree.root_node.children:
-            if node.type not in {"class_definition", "function_definition"}:
+            if node.type not in {"function_declaration", "method_declaration"}:
                 continue
             name_node = node.child_by_field_name("name")
             if name_node is None:
