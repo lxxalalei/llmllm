@@ -6,10 +6,10 @@
 
 - 当前主路线：`Phase 3 — 增量知识编译`（Phase 2 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`M2 — Incremental regeneration`
+- 当前里程碑：`M3 — Publish and index refresh`
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：等待 Mattermost `server/channels/app/channel.go` 出现一次真实上游变化，使用 `scripts/regenerate_mattermost_change.py` 对目标 commit 执行 L1/L2 dry-run，并核对 L3 Review 列表；随后进入 M3 Publish / index refresh。
-- 当前阻塞：无。当前 Mattermost master 相对知识基线已有后续提交，但目标 `channel.go` 尚未变化，因此尚无真实 M2 上游样本可运行模型 dry-run。CI 不执行外部付费模型调用。
+- 下一验收项：等待 Mattermost `server/channels/app/channel.go` 出现一次真实上游变化，执行 `regenerate_mattermost_change.py` 生成 M2 preview，再用 `publish_regeneration.py` 完成 dry-run → 人工 approve → Markdown/Git → affected Qdrant points 的整链验收。
+- 当前阻塞：无工程阻塞。Mattermost master 相对知识基线已有后续提交，但目标 `channel.go` 尚未变化，因此暂无真实上游样本可执行完整 M2/M3 增量发布链；CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -109,14 +109,18 @@ Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embed
 - [x] L2 增量重生成核心：仅在 L1 语义变化时基于当前完整 L1 feature scope 重新综合 L2，并形成 old/new diff。
 - [x] L3 Review routing：只有 L2 真正变化才列出依赖它的 L3 Review 候选，不自动发布产品真相。
 - [x] Mattermost M2 dry-run 入口：`scripts/regenerate_mattermost_change.py` 输出 L1/L2 diff + L3 Review JSON，不写正式 Markdown/Qdrant。
-- [ ] 使用真实 Mattermost `channel.go` 上游变化执行模型 dry-run。
-- [ ] Review/Publish 后写回 Markdown/Git，并增量刷新 Qdrant。
+- [x] M3 publish plan：`scripts/publish_regeneration.py` 默认 dry-run，只有 `--approve` 才写 canonical Markdown/Git。
+- [x] M3 状态安全：L3 进入 review 时，派生的 Published L4 同步变为 outdated，避免用户继续检索旧 FAQ。
+- [x] M3 Qdrant 增量刷新：仅对 publish plan 涉及的 Knowledge ID upsert/delete；全量 `sync_qdrant.py` 保留作修复工具。
+- [ ] 使用真实 Mattermost `channel.go` 上游变化执行 Code → L1/L2 → L3/L4 → Markdown → Qdrant 整链验收。
 
-M1 代码级验证：PR #3 最终 head CI success；真实外部 GitHub Webhook delivery 尚未单独宣称通过。
+M1 代码级验证：PR #3 已合并，CI success；真实外部 GitHub Webhook delivery 尚未单独宣称通过。
 
-M2 代码级验证：PR #4 CI 已覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding commit/line 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离、同名 Go method/缺失 symbol/重复 Knowledge ID 显式失败，以及 Mattermost dry-run 在目标文件未变化时不调用 LLM。真实付费模型增量运行等待 `channel.go` 出现上游变化。
+M2 代码级验证：PR #4 已合并；CI 覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding commit/line 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离、同名 Go method/缺失 symbol/重复 Knowledge ID 显式失败，以及 Mattermost dry-run 在目标文件未变化时不调用 LLM。真实付费模型增量运行等待 `channel.go` 出现上游变化。
 
-当前原则：Webhook/增量编译运行时只产生报告和候选知识，不直接改写正式 Markdown/Git，也不直接修改 Qdrant；Review/Publish 后才更新 canonical knowledge 和搜索索引。
+M3 代码级验证：PR #5 当前分支 CI #94 success；覆盖 publish dry-run/approve、Git 文件增删、SourceBinding 推进、L3 review → L4 outdated，以及 Qdrant 按 Knowledge ID 增量 upsert/delete。PR #5 尚未合并，不将其描述成 main 已发布能力。
+
+当前原则：Webhook/M2 只产生影响报告和候选知识；只有显式人工 approve 才修改 canonical Markdown。Qdrant 只在 canonical knowledge 写回后刷新，仍然只是索引而不是真相源。
 
 ## Phase 4 — 企业化 (`pending`)
 
