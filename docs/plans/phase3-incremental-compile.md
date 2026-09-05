@@ -18,8 +18,10 @@ GitHub push
 → derived_from 反向传播
 → impact report
 → 增量 L1/L2
-→ L3 Review
-→ Publish 后 Qdrant sync
+→ L3 Review + L4 outdated
+→ 人工 approve
+→ canonical Markdown/Git
+→ affected Qdrant points refresh
 ```
 
 ## 当前边界
@@ -57,16 +59,21 @@ Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 Sour
 
 ## M3 — Publish and index refresh
 
-- [ ] Review 通过后落盘 Markdown/Git。
-- [ ] 更新 source commit / lineage。
-- [ ] 只刷新受影响检索资产；必要时保留全量 sync 作为修复工具。
-- [ ] 验证发布前后普通用户检索结果变化。
+- [x] `scripts/publish_regeneration.py` 默认只输出 publish plan，不写知识文件。
+- [x] 只有显式 `--approve` 才把 regeneration 候选写回 `knowledge/**/*.md`；Git diff 仍由人检查，不自动 commit/merge。
+- [x] surviving L1 写回新的 SourceBinding commit/file/line；changed/added/removed L1/L2 映射成 Markdown 文件更新/新增/删除。
+- [x] L3 变化进入 `review`；依赖它的 Published L4 同步变为 `outdated`，避免普通用户继续检索旧答案。
+- [x] Qdrant 支持按受影响 Knowledge ID `upsert/delete`；增量刷新从已写回 canonical Markdown 重新加载资产。
+- [x] 保留 `scripts/sync_qdrant.py` 全量同步作为修复工具。
+- [x] 单元/业务测试验证 dry-run 不改文件、approved publish、文件增删和 Qdrant 增量刷新。
+- [ ] 使用一次真实 Mattermost `channel.go` 变化完成 Code → L1/L2 → L3/L4 状态 → Markdown → Qdrant 的整链验收。
 
 ## 验证证据
 
-- PR #4 最新 dry-run/文档收口前一版 CI #81 success；覆盖全部单元/业务测试。
-- Copilot 对同名 Go method、静默丢 carried fact、重复 Knowledge ID 的三条 review 均已修复并关闭 thread。
-- 当前 Mattermost master 相比知识基线向前推进，但 `server/channels/app/channel.go` 未变化，所以还不能声称完成真实模型增量运行。
+- PR #3：M1 Git change intake 已合并；CI 通过。真实外部 GitHub delivery 尚未单独宣称通过。
+- PR #4：M2 Incremental regeneration 已合并；CI 覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离及显式失败边界。
+- PR #5：M3 Publish / index refresh 当前分支 CI #94 success；自审补充了 L3 Review 时 Published L4 必须变 `outdated` 的回归测试。
+- 当前 Mattermost master 相比知识基线向前推进，但 `server/channels/app/channel.go` 尚未变化，所以还不能声称完成真实模型增量发布整链。
 
 ## 非目标
 
@@ -74,3 +81,4 @@ Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 Sour
 - 不在本阶段接企业 SSO/IAM。
 - 不为 Webhook 引入 Kafka、任务集群或复杂事件总线。
 - 不让 Qdrant 成为知识真相源。
+- 不在 M3 做 Review Console/UI 或自动 Git merge。
