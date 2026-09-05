@@ -64,10 +64,10 @@ symbols:
 
 当前已经形成：
 
-- 12 个真实 L1 Engineering Facts 人工基准
+- 12 个真实 L1 Engineering Facts 人工基准（另有 2 轮真实模型 Code→L1 运行预览，未入库）
 - 4 个 L2 Engineering Rules 草稿
-- 3 个 L3 Product Logic，状态为 `review`
-- 6 个 L4 FAQ 草稿
+- 4 个 L3 Product Logic：Mattermost `team_channel` 已 `published`（2026-09-05 产品审核批准），其余处于 `review`；另有 conversation 示例 1 个 `published`
+- 11 个 L4 FAQ：Mattermost 10 个（8 published + 2 draft）+ conversation 示例 1 个 published
 - Go/Python Tree-sitter symbol parser
 - Compiler Preview 可解析实际 Go/Python 源码内容并返回 symbol
 - OpenAI Structured Outputs `Code → L1` 生成器
@@ -89,6 +89,12 @@ export LLM_MODEL=<支持 Structured Outputs 的模型>
 export LLM_API_KEY=<your key>
 ```
 
+使用 OpenAI 兼容端点时（可选）：
+
+```bash
+export OPENAI_BASE_URL=<endpoint base url>
+```
+
 然后：
 
 ```bash
@@ -104,8 +110,12 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 - `GET /health`
 - `GET /ready`
 - `POST /api/v1/compiler/preview`
-- `GET /api/v1/knowledge/{knowledge_id}`
-- `GET /api/v1/knowledge/{knowledge_id}/lineage`
+- `GET /api/v1/knowledge?role=user|product|test|developer`：按角色消费边界列出知识（普通用户仅见 Published L3/L4）
+- `GET /api/v1/knowledge/{knowledge_id}?role=...`：详情；角色不可见统一返回 404
+- `GET /api/v1/knowledge/{knowledge_id}/lineage?role=...`：血缘（可追溯至代码 SourceBinding）
+- `GET /api/v1/knowledge/{knowledge_id}/drill?role=...`：向更低知识层下钻（如 L3 → L2）
+
+`role` 省略时为管理/调试视图，不做过滤。
 
 ## 本地启动
 

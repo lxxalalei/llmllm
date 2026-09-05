@@ -94,23 +94,23 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 - [x] Compiler 接收 Go source content。
 - [x] 外部 Mattermost 测试命令与未验证状态明确记录。
 
-### M2 — in_progress
+### M2 — completed
 
 - [x] 12 个 L1 人工基准事实。
 - [x] 4 个 L2。
 - [x] 3 个 L3 review 草稿。
-- [ ] 10~30 个 L4：当前 6 个。
+- [x] 10~30 个 L4：Mattermost 达 10 个（2026-09-05：发布 4 + 新增 4，8 published / 2 draft）。
 - [x] 真实 `Code → L1` 生成器代码。
 - [x] 固定 Mattermost 本地生成 harness。
-- [ ] 使用真实 API 凭据运行 Mattermost → L1。
-- [ ] 将模型结果与 12 条人工基准做质量对比。
-- [ ] 产品审核并发布至少一条 L3，再派生可发布 L4。
+- [x] 使用真实 API 凭据运行 Mattermost → L1（2026-09-05，见验证记录）。
+- [x] 将模型结果与 12 条人工基准做质量对比（2026-09-05，见验证记录）。
+- [x] 产品审核并发布至少一条 L3，再派生可发布 L4（2026-09-05：批准发布 `team_channel`；派生发布 limit / creator_auto_join / default_category / join_message 4 条 L4）。
 
-### M3 — pending
+### M3 — completed
 
-- [ ] 普通用户只能消费 Published L3/L4。
-- [ ] 产品/测试可从 L3 下钻 L2。
-- [ ] 开发可从 L2/L1 定位固定 ref 代码。
+- [x] 普通用户只能消费 Published L3/L4（role=user 门控 + 404 防枚举）。
+- [x] 产品/测试可从 L3 下钻 L2（drill API；test 另有 L1 资产授权）。
+- [x] 开发可从 L2/L1 定位固定 ref 代码（SourceBinding repo/commit/file/symbol 经 API 暴露）。
 - [x] L4 可沿 lineage 追溯到代码 source。
 
 ### M4 — pending
@@ -121,9 +121,20 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 
 ## 下一实施目标
 
-拿真实凭据跑一次固定 Mattermost 样本。运行结果只输出预览 JSON，不直接覆盖长期知识资产；先与 12 条人工基准对比，再决定 prompt/schema 是否需要调整。模型生成质量没有验证前，不继续自动化 L1 → L2。
+M2（真实运行/基准对比/产品审核发布/补足 L4）与 M3（角色消费边界）已完成（2026-09-05）。下一步 M4：
+
+- 准备一个可控代码变更样本（固定 commit 前/后），验证：changed symbol → 定位受影响 L1 → 沿关系找到受影响 L2/L3/L4 → 驱动进入 outdated/review 状态。
+
+遗留风险（进入 M4 前可先处理，不阻塞）：两次真实运行事实切分数 17/27 不稳定且输出英文，入库前需固定切分/语言策略；27 条生成预览未逐条人工复核。
 
 ## 验证记录
+
+- 真实 `Code → L1` 运行 1（2026-09-05，修复前 driver 复刻）：17 条 L1 `draft`，绑定全部正确；Python 3.14 曾因未关闭 AsyncOpenAI 客户端在 asyncio 收尾访问违例崩溃（0xC0000005），Python 3.12 + 显式 close 正常 → 触发 harness 修复。
+- 真实 `Code → L1` 运行 2（2026-09-05，官方脚本修复后）：`python scripts/generate_mattermost_l1.py <mattermost checkout> --output .../generated-l1-official.json`，Python 3.12.13 venv，exit 0，27 条 L1 `draft`：绑定 100% 通过（0 bad）、id 无重复，CreateChannelWithUser 11 / CreateChannel 16。
+- 对比方法：概念级人工映射 + 关键字核对（模型输出英文、人工基准中文）。结果：12/12 概念覆盖，无重复，无错误归因；default-category / join-message / websocket-event 被合并进一条综合事实（粒度变粗），type-routing 被拆为 3 条；4 条超出基准的新事实待人工复核。
+- 端点/模型：OpenAI 兼容 Responses API（本机 Codex provider `qianji`，`OPENAI_BASE_URL` 见 README）；模型 `DS/DeepSeek-V4-Flash`；凭据不写入仓库与报告。
+- 原始产物：`.scratch/run-mattermost-l1/`（generated-l1.json、generated-l1-official.json、report-2026-09-05.md、verification-summary.json）。
+- 未覆盖：Mattermost 自身 `go test` 未实际执行；27 条未逐条人工复核；L3 审核发布未进行；两次运行事实切分数不一致（17/27），切分粒度策略未定。
 
 - Go parser / Compiler Go source analysis：CI 通过。
 - L1 generator source-binding 单元测试：CI 通过。

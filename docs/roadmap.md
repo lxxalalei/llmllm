@@ -6,10 +6,10 @@
 
 - 当前主路线：`Phase 1 — 单模块纵向验证`
 - 路线状态：`in_progress`
-- 当前里程碑：`M2 — Code → L4`
+- 当前里程碑：`M3 — 角色消费边界`（M2 已于 2026-09-05 收口）
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：在固定 Mattermost checkout 上执行真实 OpenAI `Code → L1`，将生成结果与 12 条人工基准 L1 对比，并记录遗漏、重复、错误归因和 source binding 是否正确。
-- 当前阻塞：缺少可用于实际运行的 `LLM_API_KEY` / `LLM_MODEL`。生成器和本地验证 harness 已实现，CI 不执行外部付费模型调用。
+- 下一验收项（M4）：在可控代码变更样本上验证影响定位与过期传播——从 changed symbol 定位受影响 L1，沿关系找到受影响 L2/L3/L4，并驱动其进入 outdated/review 状态。
+- 当前阻塞：无（真实模型运行、基准对比、产品审核发布均已完成，2026-09-05）。CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -51,10 +51,10 @@
 
 当前产物与能力：
 
-- L1：12 个人工基准事实，`draft`，均绑定固定 Mattermost repo/commit/file/symbol。
+- L1：12 个人工基准事实，`draft`，均绑定固定 Mattermost repo/commit/file/symbol；另有 2 轮真实模型运行预览 JSON（17 条 / 27 条，均 `draft`、绑定全部通过），尚未入库。
 - L2：4 个，`draft`。
-- L3：3 个，`review`，尚未作为产品真相发布。
-- L4：6 个，`draft`，尚未向普通用户发布。
+- L3：Mattermost 3 个中 `team_channel` 已 `published`（2026-09-05 产品审核批准），`managed_category`/`space_availability` 保持 `review`；另有 conversation 示例 1 个 `published`。
+- L4：Mattermost 10 个（8 `published` + 2 `draft`）；另 conversation 示例 1 个 `published`。
 - Go/Python parser 与真实 source analysis 已实现。
 - OpenAI Structured Outputs `Code → L1` 生成器已实现。
 - L1 生成器只允许模型输出事实内容和 source symbol 名称；repo/ref/commit/file/行号由程序绑定并校验。
@@ -64,8 +64,8 @@
 ### 里程碑
 
 - `M1`（`completed`）：固定 Mattermost 输入范围；Go parser 与 Compiler source analysis 已通过 CI；Mattermost 自身 `go test` 命令已记录但未在当前环境实际执行，不宣称通过。
-- `M2`（`in_progress`）：人工 L1-L4 基准资产与真实 `Code → L1` 生成代码均已存在；尚缺一次带真实模型凭据的固定样本运行和基准对比，L4 数量仍为 6/10~30。
-- `M3`（`pending`）：完整角色检索边界尚未实现；L4 → Code 追溯能力已提前完成。
+- `M2`（`completed`，2026-09-05）：真实模型固定样本运行与基准对比完成（12/12 概念覆盖、无重复与错误归因、source binding 100% 通过）；产品审核批准发布 L3 `team_channel`，派生发布 4 条 L4，新增 4 条 FAQ，Mattermost L4 达 10 条（8 published + 2 draft）。
+- `M3`（`completed`，2026-09-05）：角色消费边界 API 已实现并通过测试（18 passed）——普通用户仅可消费 Published L3/L4；产品/测试可从 L3 下钻 L2（并保留 L1 给 test）；开发可从 L2/L1 定位固定 ref 代码；L4 → Code lineage 已提前完成。检索层（Qdrant）角色过滤属 Phase 2。
 - `M4`（`pending`）：基于可控代码变更样本验证影响定位与过期传播。
 
 ### 当前验证证据
@@ -74,6 +74,9 @@
 - Compiler 在未配置 provider 时明确记录 `l1_skipped_no_provider`，不再把占位流程标成 `l1_generated`。
 - L2/L3/L4 未实现自动生成时明确记录 `*_not_implemented`，不生成虚假 artifact。
 - 一次真实 CI 失败暴露 Markdown 资产缺少结构化 `title`；当前规则为 frontmatter `title` 或 Markdown H1，二者都缺失时直接失败。
+- 真实 `Code → L1` 运行（2026-09-05）：固定 Mattermost checkout `43b2ae8`，OpenAI 兼容 Responses 端点 + Structured Outputs；修复 harness 后官方脚本直接运行 exit 0。与 12 条人工基准做概念级对比：12/12 覆盖、无重复、无错误归因、repo/commit/file/symbol/行范围绑定 100% 通过。细节见 `docs/plans/mattermost-channel-creation.md`。
+- 工具链修复（2026-09-05）：tree-sitter 收紧至 `<0.26`（0.26.0 与 tree-sitter-go 0.25.0 ABI 不兼容，真实文件解析产生越界行号/字节偏移）；extractor 增加 `close()`，生成脚本运行后显式关闭客户端（修复 Python 3.14 下 asyncio 收尾访问违例）；脚本 `file` 绑定改用 `as_posix()`，与资产目录路径格式一致。
+- 角色消费边界（M3，2026-09-05）：`GET /api/v1/knowledge?role=...`、详情/lineage/drill 端点支持 `role` 门控（不可见统一 404，防枚举）；`app/knowledge/views.py` 显式编码角色策略；`tests/test_role_views.py` 覆盖 user/product/test/developer 边界与下钻。
 
 ## Phase 2 — 检索与问答 (`pending`)
 
