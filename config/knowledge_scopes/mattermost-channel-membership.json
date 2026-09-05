@@ -12,7 +12,22 @@
         "AddUserToChannel",
         "AddChannelMember",
         "removeUserFromChannel",
-        "removeChannelMembership"
+        "removeChannelMembership",
+        "PostAddToChannelMessage",
+        "postLeaveChannelMessage",
+        "postRemoveFromChannelMessage"
+      ]
+    },
+    {
+      "path": "server/channels/app/guarded_hooks.go",
+      "symbols": [
+        "runGuardedChannelMemberWillBeAdded"
+      ]
+    },
+    {
+      "path": "server/channels/app/channel_discoverable_visibility.go",
+      "symbols": [
+        "IsDiscoverableSelfAddBlocked"
       ]
     },
     {
