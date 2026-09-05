@@ -47,6 +47,7 @@ def _catalog() -> KnowledgeCatalog:
         sources=[
             SourceBinding(
                 repo="r",
+                ref="master",
                 commit="c1",
                 file="f.go",
                 symbol="CreateChannel",
@@ -75,9 +76,11 @@ async def test_repository_change_only_analyzes_tracked_source_files() -> None:
         repository="r",
         before="c1",
         after="c2",
+        ref="refs/heads/master",
         client=client,
     )
     assert client.compare_calls == [("r", "c1", "c2")]
+    assert report["ref"] == "refs/heads/master"
     assert report["tracked_files"] == ["f.go"]
     assert report["source_baselines"] == {"f.go": "c1"}
     assert [item["path"] for item in report["files"]] == ["f.go"]
@@ -91,6 +94,24 @@ async def test_repository_change_only_analyzes_tracked_source_files() -> None:
 
 
 @pytest.mark.asyncio
+async def test_feature_branch_push_does_not_impact_master_knowledge() -> None:
+    class MustNotCall:
+        async def compare_files(self, *args, **kwargs):
+            raise AssertionError("compare should not run")
+
+    report = await analyze_repository_change(
+        _catalog(),
+        repository="r",
+        before="c1",
+        after="c2",
+        ref="refs/heads/feature/test",
+        client=MustNotCall(),
+    )
+    assert report["tracked_files"] == []
+    assert report["files"] == []
+
+
+@pytest.mark.asyncio
 async def test_lagged_push_catches_up_from_knowledge_source_commit() -> None:
     client = FakeGitHubClient()
     report = await analyze_repository_change(
@@ -98,6 +119,7 @@ async def test_lagged_push_catches_up_from_knowledge_source_commit() -> None:
         repository="r",
         before="missed-push-commit",
         after="c2",
+        ref="refs/heads/master",
         client=client,
     )
     assert client.compare_calls == [("r", "c1", "c2")]
@@ -121,6 +143,7 @@ async def test_empty_new_source_is_valid_and_reports_removed_symbol() -> None:
         repository="r",
         before="c1",
         after="c2",
+        ref="refs/heads/master",
         client=EmptyNewClient(),
     )
     assert report["files"][0]["symbol_changes"] == [
@@ -140,6 +163,7 @@ async def test_untracked_repository_skips_remote_compare() -> None:
         repository="other",
         before="c1",
         after="c2",
+        ref="refs/heads/master",
         client=MustNotCall(),
     )
     assert report["tracked_files"] == []
