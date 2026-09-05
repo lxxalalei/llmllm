@@ -114,6 +114,7 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 - `GET /api/v1/knowledge/{knowledge_id}?role=...`：详情；角色不可见统一返回 404
 - `GET /api/v1/knowledge/{knowledge_id}/lineage?role=...`：血缘（可追溯至代码 SourceBinding）
 - `GET /api/v1/knowledge/{knowledge_id}/drill?role=...`：向更低知识层下钻（如 L3 → L2）
+- `POST /api/v1/qa`：问答助手——按角色检索可见知识资产，用 LLM 组织 grounded 答案（仅引用实际检索到的知识，`cites` 为资产 id；未覆盖时返回 `knowledge_gap: true`）
 
 `role` 省略时为管理/调试视图，不做过滤。
 

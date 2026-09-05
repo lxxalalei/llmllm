@@ -6,9 +6,9 @@
 
 - 当前主路线：`Phase 2 — 检索与问答`（Phase 1 已于 2026-09-05 完成）
 - 路线状态：`in_progress`
-- 当前里程碑：`Phase 2 首个闭环 — Embedding → Qdrant 索引 → 检索 API`
+- 当前里程碑：`Phase 2 首个闭环 — 角色化检索 + LLM grounded 问答 API`（2026-09-05 完成并真实模型实测）
 - 当前样本：Mattermost `Channel Creation`
-- 下一验收项：落地 Embedding Provider，把 `knowledge/` 资产同步索引到 Qdrant，提供混合检索 API（FAQ Direct Match 高置信直接返回，元数据/角色过滤沿用 M3 边界）；随后补齐 Sparse/BM25、Reranker、L3 Fallback 与 Query Analytics。
+- 下一验收项：把检索层从本地 n-gram 占位替换为可扩展索引——优先落地 Embedding Provider + Qdrant 混合检索（当前环境无 Docker/Qdrant，需先恢复该依赖），并补齐 Sparse/BM25、Reranker、Query Analytics 与 Knowledge Gap 持久化。
 - 当前阻塞：无（Phase 1 全里程碑完成，2026-09-05）。CI 不执行外部付费模型调用。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
@@ -79,17 +79,19 @@
 - 角色消费边界（M3，2026-09-05）：`GET /api/v1/knowledge?role=...`、详情/lineage/drill 端点支持 `role` 门控（不可见统一 404，防枚举）；`app/knowledge/views.py` 显式编码角色策略；`tests/test_role_views.py` 覆盖 user/product/test/developer 边界与下钻。
 - 影响定位与过期传播（M4，2026-09-05）：`app/knowledge/impact.py`（changed-symbol 检测按内容 hash，行漂移记为 shifted 不传播；绑定 L1 定位；反向 derived_from 闭包；状态建议 L1/L2→outdated、L3 published→review、L4 published→outdated）；`scripts/analyze_code_impact.py` dry-run/--apply；`tests/test_impact.py`。端到端报告：`.scratch/m4/impact-report.json`。
 
-## Phase 2 — 检索与问答 (`pending`)
+## Phase 2 — 检索与问答 (`in_progress`)
 
-- Embedding Provider
-- Sparse / BM25
-- Qdrant Hybrid Search
-- Metadata / Role Filter
-- Reranker
-- FAQ Direct Match
-- L3 Fallback
-- Query Analytics
-- Knowledge Gap
+- [ ] Embedding Provider（依赖外部 embedding 模型/端点，未落地）
+- [ ] Sparse / BM25（未落地；当前为本地 n-gram 占位）
+- [ ] Qdrant Hybrid Search（当前环境无 Docker，未落地）
+- [x] Metadata / Role Filter（M3 角色消费边界；检索基于角色可见资产）
+- [ ] Reranker（未落地）
+- [x] FAQ Direct Match（本地 n-gram 评分，接口契约可替换）
+- [x] L3 Fallback（检索按角色覆盖 L2/L3/L4；user 仅 published L3/L4）
+- [ ] Query Analytics（未落地）
+- [x] Knowledge Gap（`/api/v1/qa` 返回 `knowledge_gap`；持久化记录未落地）
+
+已实现 QA 闭环（2026-09-05）：`POST /api/v1/qa`——按角色检索可见资产（本地 n-gram，`app/knowledge/retrieval.py`）→ LLM 组织 grounded 答案（`app/knowledge/qa.py`，仅允许引用实际检索资产，cites 由代码硬化）→ 31 项测试通过；真实模型实测 4 问（user/product/developer + 盲区 gap）全部符合预期。
 
 ## Phase 3 — 增量知识编译 (`pending`)
 
