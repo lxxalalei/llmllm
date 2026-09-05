@@ -63,6 +63,10 @@ Inventory 只陈述代码结构，不自动把文件名猜成产品 Feature。
 4. Channel Archive / Restore
 5. Channel Creation（已有基线，用于对照）
 
+Channel Membership 已先完成一轮人工源码追踪，基准见 [`docs/baselines/mattermost-channel-membership.md`](../baselines/mattermost-channel-membership.md)。人工基准不直接写入 canonical knowledge，它用于检查真实 Batch Compiler 输出是否覆盖关键事实、是否出现 unsupported fact / duplicate / wrong binding。
+
+当前 Channel Membership scope 已从最初的 API + `channel.go` 入口扩展到 guard、discoverable self-add 和成员变更 system-post 辅助函数；join request、shared-channel/syncables 仍作为相邻调用路径，不无限扩大单个 Feature 的输入边界。
+
 每个 Feature 的验收不是“模型跑完”，而是：
 
 - Source scope 可解释；
@@ -70,6 +74,8 @@ Inventory 只陈述代码结构，不自动把文件名猜成产品 Feature。
 - L2 规则无明显重复/错误抽象；
 - Publish 后可检索；
 - 用真实问题验证问答覆盖。
+
+当前下一验收项：在真实 Mattermost checkout 上运行 Channel Membership Batch Compiler，保存 L1/L2 preview，与人工基准逐项比较，先验证知识质量，再进入 Publish。
 
 ## M4 — Coverage + Knowledge Gap
 
