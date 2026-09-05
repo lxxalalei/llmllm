@@ -1,0 +1,41 @@
+{
+  "repo": "mattermost/mattermost",
+  "ref": "master",
+  "namespace": "mattermost.channel.membership",
+  "module": "mattermost.channel",
+  "feature": "channel_membership",
+  "sources": [
+    {
+      "path": "server/channels/app/channel.go",
+      "symbols": [
+        "addUserToChannel",
+        "AddUserToChannel",
+        "AddChannelMember",
+        "removeUserFromChannel",
+        "removeChannelMembership",
+        "PostAddToChannelMessage",
+        "postLeaveChannelMessage",
+        "postRemoveFromChannelMessage"
+      ]
+    },
+    {
+      "path": "server/channels/app/guarded_hooks.go",
+      "symbols": [
+        "runGuardedChannelMemberWillBeAdded"
+      ]
+    },
+    {
+      "path": "server/channels/app/channel_discoverable_visibility.go",
+      "symbols": [
+        "IsDiscoverableSelfAddBlocked"
+      ]
+    },
+    {
+      "path": "server/channels/api4/channel.go",
+      "symbols": [
+        "addChannelMember",
+        "removeChannelMember"
+      ]
+    }
+  ]
+}

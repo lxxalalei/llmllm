@@ -4,12 +4,12 @@
 
 ## 当前路线
 
-- 当前主路线：`Phase 3 — 增量知识编译`（Phase 2 已于 2026-09-05 完成）
+- 当前主路线：`Phase 4 — 规模化知识构建 / Knowledge Expansion`
 - 路线状态：`in_progress`
-- 当前里程碑：`M3 — Publish and index refresh`
-- 当前样本：Mattermost `Channel Creation`
-- 下一验收项：等待 Mattermost `server/channels/app/channel.go` 出现一次真实上游变化，执行 `regenerate_mattermost_change.py` 生成 M2 preview，再用 `publish_regeneration.py` 完成 dry-run → 人工 approve → Markdown/Git → affected Qdrant points 的整链验收。
-- 当前阻塞：无工程阻塞。Mattermost master 相对知识基线已有后续提交，但目标 `channel.go` 尚未变化，因此暂无真实上游样本可执行完整 M2/M3 增量发布链；CI 不执行外部付费模型调用。
+- 当前里程碑：`M1/M2 — Repository Inventory + Batch Knowledge Compiler`
+- 当前样本：Mattermost `Channel` 模块，从 `Channel Creation` 扩展到 Membership / Permission / Update / Archive & Restore。
+- 下一验收项：先对 Mattermost Channel 范围运行 Repository Inventory，再用 `config/knowledge_scopes/mattermost-channel-membership.json` 执行首个多文件/多 symbol 的 L1/L2 编译 preview，核对事实/规则质量后进入 Publish 与 QA 验证。
+- 当前阻塞：无。Phase 3 的增量维护基础能力已经具备，真实上游 change delivery/整链运行保留为维护能力验收债务，不再阻塞知识库扩容主线。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -97,7 +97,7 @@
 
 Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embedding Provider）、`app/knowledge/vector_index.py`（Qdrant 索引：UUID 稳定 point id、payload 含层/状态/可见角色、角色过滤在服务端执行、全量同步孤儿清理）、`retrieval.retrieve_hybrid`（dense+sparse RRF）、`scripts/sync_qdrant.py`。真实同步 31 个资产 → `knowledge_assets`；QA 实测 `backend: hybrid` 回答正确且引用真实。本机 Docker（WSL2 引擎）已部署，compose 服务 `restart: unless-stopped`。
 
-## Phase 3 — 增量知识编译 (`in_progress`)
+## Phase 3 — 增量知识维护基础 (`completed`)
 
 实施计划：[Phase 3 增量知识编译](plans/phase3-incremental-compile.md)
 
@@ -112,17 +112,33 @@ Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embed
 - [x] M3 publish plan：`scripts/publish_regeneration.py` 默认 dry-run，只有 `--approve` 才写 canonical Markdown/Git。
 - [x] M3 状态安全：L3 进入 review 时，派生的 Published L4 同步变为 outdated，避免用户继续检索旧 FAQ。
 - [x] M3 Qdrant 增量刷新：仅对 publish plan 涉及的 Knowledge ID upsert/delete；全量 `sync_qdrant.py` 保留作修复工具。
-- [ ] 使用真实 Mattermost `channel.go` 上游变化执行 Code → L1/L2 → L3/L4 → Markdown → Qdrant 整链验收。
 
 M1 代码级验证：PR #3 已合并，CI success；真实外部 GitHub Webhook delivery 尚未单独宣称通过。
 
-M2 代码级验证：PR #4 已合并；CI 覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding commit/line 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离、同名 Go method/缺失 symbol/重复 Knowledge ID 显式失败，以及 Mattermost dry-run 在目标文件未变化时不调用 LLM。真实付费模型增量运行等待 `channel.go` 出现上游变化。
+M2 代码级验证：PR #4 已合并；CI 覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding commit/line 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离、同名 Go method/缺失 symbol/重复 Knowledge ID 显式失败，以及 Mattermost dry-run 在目标文件未变化时不调用 LLM。
 
-M3 代码级验证：PR #5 当前分支 CI #94 success；覆盖 publish dry-run/approve、Git 文件增删、SourceBinding 推进、L3 review → L4 outdated，以及 Qdrant 按 Knowledge ID 增量 upsert/delete。PR #5 尚未合并，不将其描述成 main 已发布能力。
+M3 代码级验证：PR #5 已合并；最终 head CI #98 success，覆盖 publish dry-run/approve、Git 文件增删、SourceBinding 推进、L3 review → L4 outdated，以及 Qdrant 按 Knowledge ID 增量 upsert/delete。
 
-当前原则：Webhook/M2 只产生影响报告和候选知识；只有显式人工 approve 才修改 canonical Markdown。Qdrant 只在 canonical knowledge 写回后刷新，仍然只是索引而不是真相源。
+未完成的真实验收：尚未用一次真实 Mattermost `channel.go` 上游变化执行 GitHub delivery → regeneration → review/publish → Qdrant 的完整外部链路。该项保留为 Maintenance Infrastructure 的端到端验收债务，不再作为当前知识扩容主线的阻塞项。
 
-## Phase 4 — 企业化 (`pending`)
+## Phase 4 — 规模化知识构建 (`in_progress`)
+
+实施计划：[Knowledge Expansion — 规模化知识构建](plans/knowledge-expansion.md)
+
+- [x] Repository Inventory：Go/Python 文件、top-level symbol、行范围，可限定目录/文件。
+- [x] Batch Scope：一个 Feature 可绑定多个 source 文件和多个 symbol。
+- [x] Batch Code → L1：每个 source 保留真实 SourceBinding，跨文件汇总。
+- [x] Batch L1 → L2：基于当前 Feature 的完整 L1 集合统一综合工程规则。
+- [x] Preview 与现有 Publish 接口兼容，新 Feature 可直接进入 dry-run / approve / Markdown / Qdrant。
+- [x] Mattermost `Channel Membership` 首个 scope 描述。
+- [ ] 对真实 Mattermost checkout 运行 Channel Membership L1/L2 模型编译并审核结果。
+- [ ] 扩展 Channel Permission / Update / Archive & Restore。
+- [ ] 增加 Knowledge Coverage Report。
+- [ ] 将 QA `knowledge_gap` 转换为知识构建优先级输入。
+
+当前原则：先把已有代码里的业务事实和工程规则持续抽出来，形成足够完整的知识库；问答、检索和增量维护能力作为已有基础设施服务知识生产，而不是反过来成为主线。
+
+## Phase 5 — 企业化 (`pending`)
 
 - SSO / IAM
 - Department / Project Permission
