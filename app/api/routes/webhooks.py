@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.integrations.github import GitHubSourceClient, analyze_repository_change
@@ -10,6 +10,7 @@ from app.knowledge import KnowledgeCatalog
 
 router = APIRouter()
 KNOWLEDGE_ROOT = Path("knowledge")
+CommitSha = Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
 
 
 class GitHubRepository(BaseModel):
@@ -17,8 +18,8 @@ class GitHubRepository(BaseModel):
 
 
 class GitHubPushPayload(BaseModel):
-    before: str
-    after: str
+    before: CommitSha
+    after: CommitSha
     repository: GitHubRepository
     ref: str | None = None
 
@@ -26,9 +27,9 @@ class GitHubPushPayload(BaseModel):
 @router.post("/github")
 async def github_push(
     payload: GitHubPushPayload,
-    event: Annotated[str | None, Header(alias="X-GitHub-Event")] = None,
+    event: Annotated[str, Header(alias="X-GitHub-Event")],
 ) -> dict[str, object]:
-    if event is not None and event != "push":
+    if event != "push":
         raise HTTPException(status_code=400, detail="only GitHub push events are supported")
     if payload.before == "0" * 40:
         raise HTTPException(
