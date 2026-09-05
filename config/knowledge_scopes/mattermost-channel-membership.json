@@ -1,0 +1,26 @@
+{
+  "repo": "mattermost/mattermost",
+  "ref": "master",
+  "namespace": "mattermost.channel.membership",
+  "module": "mattermost.channel",
+  "feature": "channel_membership",
+  "sources": [
+    {
+      "path": "server/channels/app/channel.go",
+      "symbols": [
+        "addUserToChannel",
+        "AddUserToChannel",
+        "AddChannelMember",
+        "removeUserFromChannel",
+        "removeChannelMembership"
+      ]
+    },
+    {
+      "path": "server/channels/api4/channel.go",
+      "symbols": [
+        "addChannelMember",
+        "removeChannelMember"
+      ]
+    }
+  ]
+}
