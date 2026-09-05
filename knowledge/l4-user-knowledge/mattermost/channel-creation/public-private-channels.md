@@ -1,5 +1,5 @@
 ---
-id: faq.mattermost.channel.create.limit
+id: faq.mattermost.channel.create.public_private_channels
 layer: L4
 module: mattermost.channel
 feature: channel_creation
@@ -10,8 +10,8 @@ derived_from:
 visible_roles: [user, product, test, developer]
 ---
 
-# 为什么我不能继续创建频道？
+# 公开频道和私有频道的创建规则一样吗？
 
-如果当前团队已经达到允许的频道数量上限，系统会阻止继续创建新频道。
+一样。标准创建入口同时支持公开与私有团队频道，创建后创建者都会自动成为成员并完成相同的成员初始化流程。
 
 > 已发布（2026-09-05）：对应 L3 产品逻辑（team_channel）已发布，本条 FAQ 对普通用户可见。

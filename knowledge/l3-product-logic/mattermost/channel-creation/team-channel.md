@@ -3,7 +3,7 @@ id: product.mattermost.channel.create.team_channel
 layer: L3
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 derived_from:
   - eng.mattermost.channel.create.standard_flow
@@ -21,4 +21,4 @@ visible_roles: [product, test, developer]
 - 新频道会加入创建者的默认频道分类。
 - 创建成功会产生加入频道的系统消息，并触发客户端可接收的频道创建事件。
 
-> 状态为 `review`：以上是由代码实现抽象出的产品逻辑，在进入普通用户知识层前需要产品审核确认。
+> 已发布（2026-09-05）：经产品审核批准，以上逻辑作为频道创建的产品行为进入普通用户知识层。

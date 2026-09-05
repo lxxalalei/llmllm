@@ -1,5 +1,5 @@
 ---
-id: faq.mattermost.channel.create.limit
+id: faq.mattermost.channel.create.channel_belongs_to_team
 layer: L4
 module: mattermost.channel
 feature: channel_creation
@@ -10,8 +10,8 @@ derived_from:
 visible_roles: [user, product, test, developer]
 ---
 
-# 为什么我不能继续创建频道？
+# 创建频道时必须选择团队吗？
 
-如果当前团队已经达到允许的频道数量上限，系统会阻止继续创建新频道。
+是的。标准入口创建的是某个团队下的频道，创建时必须指定所属团队；没有指定团队时，创建请求会被拒绝。
 
 > 已发布（2026-09-05）：对应 L3 产品逻辑（team_channel）已发布，本条 FAQ 对普通用户可见。

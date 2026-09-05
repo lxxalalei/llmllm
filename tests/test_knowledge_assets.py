@@ -8,7 +8,7 @@ def test_mattermost_faq_traces_back_to_code() -> None:
 
     faq = catalog.get("faq.mattermost.channel.create.limit")
     assert faq.layer == KnowledgeLayer.L4_USER_KNOWLEDGE
-    assert faq.status == KnowledgeStatus.DRAFT
+    assert faq.status == KnowledgeStatus.PUBLISHED
 
     lineage = catalog.trace_lineage(faq.id)
     assert [item.id for item in lineage] == [

@@ -1,5 +1,5 @@
 ---
-id: faq.mattermost.channel.create.limit
+id: faq.mattermost.channel.create.channel_limit_source
 layer: L4
 module: mattermost.channel
 feature: channel_creation
@@ -10,8 +10,8 @@ derived_from:
 visible_roles: [user, product, test, developer]
 ---
 
-# 为什么我不能继续创建频道？
+# 团队频道数量上限是由什么决定的？
 
-如果当前团队已经达到允许的频道数量上限，系统会阻止继续创建新频道。
+上限由团队设置中的频道数量上限配置决定。创建时如果新增后超过该上限，系统会拒绝创建；达到上限后无法继续创建是预期行为。
 
 > 已发布（2026-09-05）：对应 L3 产品逻辑（team_channel）已发布，本条 FAQ 对普通用户可见。

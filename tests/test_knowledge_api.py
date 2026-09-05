@@ -11,7 +11,7 @@ def test_get_real_mattermost_knowledge_item() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["id"] == "faq.mattermost.channel.create.limit"
-    assert payload["status"] == "draft"
+    assert payload["status"] == "published"
 
 
 def test_get_mattermost_lineage_to_code() -> None:
