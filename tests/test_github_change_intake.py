@@ -107,6 +107,29 @@ async def test_lagged_push_catches_up_from_knowledge_source_commit() -> None:
 
 
 @pytest.mark.asyncio
+async def test_empty_new_source_is_valid_and_reports_removed_symbol() -> None:
+    class EmptyNewClient(FakeGitHubClient):
+        async def compare_files(self, repository: str, before: str, after: str):
+            self.compare_calls.append((repository, before, after))
+            return [GitHubChangedFile(path="f.go", status="modified")]
+
+        async def fetch_text(self, repository: str, ref: str, path: str):
+            return OLD_GO if ref == "c1" else ""
+
+    report = await analyze_repository_change(
+        _catalog(),
+        repository="r",
+        before="c1",
+        after="c2",
+        client=EmptyNewClient(),
+    )
+    assert report["files"][0]["symbol_changes"] == [
+        {"name": "CreateChannel", "change": "removed"}
+    ]
+    assert report["bound_l1"] == ["l1.create"]
+
+
+@pytest.mark.asyncio
 async def test_untracked_repository_skips_remote_compare() -> None:
     class MustNotCall:
         async def compare_files(self, *args, **kwargs):
