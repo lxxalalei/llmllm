@@ -5,7 +5,8 @@ from pathlib import Path
 
 import yaml
 
-from app.knowledge.assets import load_knowledge_file
+from app.knowledge.assets import KnowledgeCatalog, load_knowledge_file
+from app.knowledge.impact import upstream_items
 from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus
 
 
@@ -132,6 +133,7 @@ def plan_regeneration_publish(
     knowledge_root: str | Path,
 ) -> PublishPlan:
     root = Path(knowledge_root)
+    catalog = KnowledgeCatalog.from_directory(root)
     existing_paths = _knowledge_paths(root)
     l1_changes = _change_map(preview, "l1_changes")
     l2_changes = _change_map(preview, "l2_changes")
@@ -182,6 +184,7 @@ def plan_regeneration_publish(
     l3_review = preview.get("l3_review", [])
     if not isinstance(l3_review, list):
         raise ValueError("l3_review must be a list")
+    review_roots: list[str] = []
     for knowledge_id in l3_review:
         if not isinstance(knowledge_id, str):
             raise ValueError("l3_review must contain knowledge ids")
@@ -193,10 +196,25 @@ def plan_regeneration_publish(
             raise ValueError(f"l3_review contains non-L3 knowledge: {knowledge_id}")
         if item.status == KnowledgeStatus.DEPRECATED:
             continue
+        review_roots.append(knowledge_id)
         if item.status != KnowledgeStatus.REVIEW:
             item = item.model_copy(update={"status": KnowledgeStatus.REVIEW})
             writes[path] = item
             upsert_ids.add(knowledge_id)
+
+    # A product-logic change makes already-published user knowledge derived
+    # from it unsafe to serve until L4 is regenerated/reviewed.
+    for item in upstream_items(catalog, review_roots):
+        if (
+            item.layer != KnowledgeLayer.L4_USER_KNOWLEDGE
+            or item.status != KnowledgeStatus.PUBLISHED
+        ):
+            continue
+        path = existing_paths.get(item.id)
+        if path is None:
+            raise ValueError(f"cannot invalidate missing L4 knowledge: {item.id}")
+        writes[path] = item.model_copy(update={"status": KnowledgeStatus.OUTDATED})
+        upsert_ids.add(item.id)
 
     overlap = set(writes) & deletes
     if overlap:
