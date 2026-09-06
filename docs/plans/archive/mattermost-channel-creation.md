@@ -1,6 +1,6 @@
 # Mattermost Channel Creation 纵向验证
 
-- 状态：in_progress
+- 状态：completed
 - 路线：[Phase 1 — 单模块纵向验证（completed，2026-09-05）](../../roadmap.md#phase-1--单模块纵向验证-completed)
 - 所有者：llmllm 项目
 - 依赖：公开可访问的 Mattermost 固定 ref；真实模型运行需要 LLM 凭据
@@ -119,9 +119,9 @@ python scripts/generate_mattermost_l1.py /path/to/mattermost --output /tmp/matte
 - [x] 沿关系找到受影响 L2/L3/L4：反向 derived_from 闭包 21 个资产（+3 L2 / +3 L3 / +10 L4）。
 - [x] 受影响知识进入 outdated/review 状态：17 条迁移（8 L1/L2→outdated、team_channel published→review、8 L4 published→outdated）；目录副本 `--apply` 实测生效，正式资产未改动。
 
-## 下一实施目标
+## 历史后继目标
 
-M2（真实运行/基准对比/产品审核发布/补足 L4）与 M3（角色消费边界）已完成（2026-09-05）。下一步 M4：
+M2（真实运行/基准对比/产品审核发布/补足 L4）与 M3（角色消费边界）完成后，计划当时记录的下一步是 M4：
 
 - 准备一个可控代码变更样本（固定 commit 前/后），验证：changed symbol → 定位受影响 L1 → 沿关系找到受影响 L2/L3/L4 → 驱动进入 outdated/review 状态。
 

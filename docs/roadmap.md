@@ -6,7 +6,7 @@
 
 - 当前主路线：`Phase 4 — 规模化知识构建 / Knowledge Expansion`
 - 路线状态：`in_progress`
-- 当前里程碑：`M1 — Mattermost Go Repository Graph`
+- 当前里程碑：`M1 — 业务入口发现 / Mattermost Go Repository Graph`
 - 当前样本：Mattermost 固定基线 `b3946ef5e2b85a27d365af2592cf1262de6a665e`，以完整成熟产品的首次存量建库为目标。
 - 当前实施计划：[Mattermost 规模的成熟产品存量知识建库](plans/mattermost-scale-knowledge-bootstrap.md)
 - 下一验收项：以零 LLM 调用生成稳定的 Mattermost API4 路由与 Go symbol 清单、解析失败列表和可复现性报告，为后续 Channel 业务切片建立 Repository Graph 基线。
@@ -124,7 +124,7 @@ M3 代码级验证：PR #5 已合并；最终 head CI #98 success，覆盖 publi
 
 ## Phase 4 — 规模化知识构建 (`in_progress`)
 
-实施计划：[Knowledge Expansion — 规模化知识构建](plans/knowledge-expansion.md)
+前序实施记录：[Knowledge Expansion — 规模化知识构建（superseded）](plans/archive/knowledge-expansion.md)。当前实施计划以本文件顶部链接的“成熟产品存量知识建库”为准。
 
 - [x] Repository Inventory：Go/Python 文件、top-level symbol、行范围，可限定目录/文件。
 - [x] Batch Scope：一个 Feature 可绑定多个 source 文件和多个 symbol。

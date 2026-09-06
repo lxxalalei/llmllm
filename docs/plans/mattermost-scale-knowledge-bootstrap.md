@@ -1,8 +1,9 @@
 # Mattermost 规模的成熟产品存量知识建库
 
 - 状态：in_progress
-- 路线：Phase 4 — 规模化知识构建
+- 路线：[Phase 4 — 规模化知识构建](../roadmap.md#phase-4--规模化知识构建-in_progress)
 - 所有者：Codex（实现与技术验收）
+- 依赖：可读取的 Mattermost 固定基线 checkout；M1 不需要 LLM 凭据
 
 ## 1. 目标
 
@@ -202,8 +203,10 @@ Mattermost source
 
 验收重点：
 
-- 能列出 Channel 的主要业务入口；
-- 能看到哪些入口已处理、哪些还没处理；
+- 以零 LLM 调用列出 Mattermost API4 路由与对应 Go symbol；
+- 显式报告解析失败和无法绑定的入口，不静默丢弃；
+- 同一固定 checkout 重复运行得到稳定清单和可复现性报告；
+- 能看到哪些 Channel 入口已处理、哪些还没处理；
 - 不要求建立全仓完美调用图。
 
 ### M2 — Business Scope
@@ -312,4 +315,4 @@ L1 保留工程事实；BehaviorRule 保存关键业务条件和结果；L2/L3/L
 
 ## 10. 下一验收项
 
-继续使用 Channel Membership 作为样本，先把现有 L1/L2 结果中暴露的条件反转、重复、ordering 和副作用遗漏问题收敛成最小 BehaviorRule 表达，再验证同一规则生成 L2/L3/L4 时是否保持语义一致。
+在固定 Mattermost checkout 上，以零 LLM 调用生成稳定的 API4 路由与 Go symbol 清单、解析失败列表和可复现性报告，为 Channel 业务切片建立 Repository Graph 基线。该项通过后再进入 M2 Business Scope；Channel Membership 的 BehaviorRule 语义修复属于后续 M3，不再冒充当前步骤。

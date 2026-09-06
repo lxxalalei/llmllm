@@ -49,7 +49,7 @@ Git + PostgreSQL + Qdrant
 
 ## 当前阶段
 
-Phase 0–3 的代码级基础能力已经完成，当前主路线是 Phase 4「规模化知识构建」。项目正从 Mattermost `Channel Creation` 单功能样本扩展到完整 `Channel` 业务模块，当前验收对象是 `Channel Membership`。
+Phase 0–3 的代码级基础能力已经完成，当前主路线是 Phase 4「规模化知识构建」。项目当前以成熟 Mattermost 代码库的首次存量建库为目标，先建立可复现的业务入口与源码结构基线，再扩展完整 `Channel` 业务域。
 
 当前知识资产：
 
@@ -73,7 +73,7 @@ published: 11
 - GitHub change intake、changed-symbol 定位、L1/L2 增量重生成、L3 Review routing、L4 过期传播和 Qdrant 增量刷新。
 - 显式审批后才写入 canonical Markdown 的发布流程。
 
-下一验收项是在真实 Mattermost checkout 上执行 `config/knowledge_scopes/mattermost-channel-membership.json`，保存 L1/L2 preview，并与 [`docs/baselines/mattermost-channel-membership.md`](docs/baselines/mattermost-channel-membership.md) 逐项比较。知识质量通过后才能进入 Publish、Qdrant 和 QA 验证。
+下一验收项是以零 LLM 调用生成稳定的 Mattermost API4 路由与 Go symbol 清单、解析失败列表和可复现性报告，为后续 Channel 业务切片建立 Repository Graph 基线。唯一的当前路线和实时状态以 [`docs/roadmap.md`](docs/roadmap.md) 为准。
 
 Phase 3 仍保留一项维护验收债务：尚未用真实上游变化完成 GitHub delivery → regeneration → review/publish → Qdrant 的完整外部链路。
 

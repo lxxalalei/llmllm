@@ -1,6 +1,9 @@
 # Knowledge Expansion — 规模化知识构建
 
-- 状态：in_progress
+- 状态：superseded
+- 路线：[Phase 4 — 规模化知识构建](../../roadmap.md#phase-4--规模化知识构建-in_progress)
+- 替代计划：[Mattermost 规模的成熟产品存量知识建库](../mattermost-scale-knowledge-bootstrap.md)
+- 替代原因：项目从单个 Batch Scope 的语义修复，调整为面向成熟产品首次存量建库的业务入口发现、Business Scope 和 BehaviorRule 主链路。
 - 当前样本：Mattermost `Channel`
 - 目标：从“单个 Feature 验证”扩展到“完整业务模块持续编译”，优先扩大知识覆盖率，再继续深化增量维护能力。
 
@@ -63,7 +66,7 @@ Inventory 只陈述代码结构，不自动把文件名猜成产品 Feature。
 4. Channel Archive / Restore
 5. Channel Creation（已有基线，用于对照）
 
-Channel Membership 已先完成一轮人工源码追踪，基准见 [`docs/baselines/mattermost-channel-membership.md`](../baselines/mattermost-channel-membership.md)。人工基准不直接写入 canonical knowledge，它用于检查真实 Batch Compiler 输出是否覆盖关键事实、是否出现 unsupported fact / duplicate / wrong binding。
+Channel Membership 已先完成一轮人工源码追踪，基准见 [`docs/baselines/mattermost-channel-membership.md`](../../baselines/mattermost-channel-membership.md)。人工基准不直接写入 canonical knowledge，它用于检查真实 Batch Compiler 输出是否覆盖关键事实、是否出现 unsupported fact / duplicate / wrong binding。
 
 当前 Channel Membership scope 已从最初的 API + `channel.go` 入口扩展到 guard、discoverable self-add 和成员变更 system-post 辅助函数；join request、shared-channel/syncables 仍作为相邻调用路径，不无限扩大单个 Feature 的输入边界。
 
@@ -75,11 +78,11 @@ Channel Membership 已先完成一轮人工源码追踪，基准见 [`docs/basel
 - Publish 后可检索；
 - 用真实问题验证问答覆盖。
 
-真实运行与人工审核已于 2026-09-06 完成，详见 [`docs/baselines/mattermost-channel-membership-review-2026-09-06.md`](../baselines/mattermost-channel-membership-review-2026-09-06.md)。编译链路和结构校验通过，输出 67 L1 / 19 L2；但 L1 粒度偏细、L2 抽象不足，本轮不发布。
+真实运行与人工审核已于 2026-09-06 完成，详见 [`docs/baselines/mattermost-channel-membership-review-2026-09-06.md`](../../baselines/mattermost-channel-membership-review-2026-09-06.md)。编译链路和结构校验通过，输出 67 L1 / 19 L2；但 L1 粒度偏细、L2 抽象不足，本轮不发布。
 
 收紧迭代已完成：新增 route-level 可控 source range、L1 symbol 分块与完整性/数量门禁、L2 最多 10 条门禁；DeepSeek Pro v4 输出 49 L1 / 10 L2，所有结构门禁通过。语义复核仍发现 unsupported ordering 与高价值 L2 主题遗漏，本轮仍不发布。
 
-当前下一验收项：增加基于 source / `derived_from` 的语义 Review/Repair 阶段和基线主题 coverage gate，通过后再进入 Publish。
+归档时未完成项：增加基于 source / `derived_from` 的语义 Review/Repair 阶段和基线主题 coverage gate。该目标已并入替代计划的 M3，不再作为当前路线入口。
 
 2026-09-06 决策：Mattermost 是开源样板，不要求用户承担产品审核。Batch scope 新增 `propagation: auto_publish`，允许通过技术门禁的 L2 自动生成 Published L3/L4；默认仍是 `review`，不影响未来自有产品。首次完整运行产出 50 L1 / 9 L2 / 9 L3 / 16 L4，但自动技术复核仍发现权限范围收缩和 FAQ 条件反转，因此本次未写入 canonical knowledge。
 

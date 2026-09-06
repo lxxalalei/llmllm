@@ -1,6 +1,6 @@
 # Phase 2 检索与问答 — 首个可实测闭环
 
-- 状态：in_progress
+- 状态：completed
 - 路线：[Phase 2 — 检索与问答（completed，2026-09-05）](../../roadmap.md#phase-2--检索与问答-completed)
 - 所有者：llmllm 项目
 - 依赖：真实 LLM 凭据（已完成首轮实测）；Qdrant/Embedding 依赖 Docker 或外部端点（当前环境不可用）
