@@ -1,0 +1,19 @@
+id: rule.mattermost.channel.permission.manage_member_roles
+title: 修改频道成员角色需要 manage_channel_roles
+domain: mattermost.channel
+capability: permission
+actor: requester
+action: update_member_roles
+resource: channel_member
+conditions:
+  all:
+  - field: requester.permission.manage_channel_roles
+    operator: equals
+    value: true
+  any: []
+decision: allow_role_update
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.permission.manage_member_roles.fact

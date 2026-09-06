@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.permission.moderation_scope_ceiling
+title: 频道 moderation 不能授予高于上级角色的权限
+domain: mattermost.channel
+capability: permission
+actor: channel_permission_admin
+action: patch_channel_moderations
+resource: channel
+conditions:
+  all:
+  - field: requested_permission
+    operator: contained_in
+    value: higher_scoped_role_permissions
+  any: []
+decision: allow_moderation_patch_within_higher_scope
+state_changes: []
+side_effects:
+- kind: websocket
+  target: channel
+  detail: channel_scheme_updated when scheme created/deleted
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.permission.moderation_scope_ceiling.fact
