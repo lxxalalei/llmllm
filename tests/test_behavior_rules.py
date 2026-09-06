@@ -119,10 +119,12 @@ def test_discoverable_self_add_rule_preserves_all_conditions_direction_and_excep
         assert "channel.policy enforced equals false" in content
         assert "requester id equals target_user_id" in content
         assert "feature.discoverable channels equals true" in content
-        assert "reject direct add" in content
         assert "requester id not equals target_user_id" in content
         assert "this_rule_does_not_block" in content
 
+    assert "reject_direct_add" in views.l2.content
+    assert "reject direct add" in views.l3.content
+    assert "reject direct add" in views.l4.content
     assert "target.is_member" not in views.l2.content
     assert "target.is_member" not in views.l3.content
     assert "target.is_member" not in views.l4.content
