@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.code_index import GoCodeParser, PythonCodeParser, Symbol
+from app.knowledge.behavior_rules import BehaviorRuleGenerator
+from app.knowledge.behavior_views import BehaviorRuleProjector
 from app.knowledge.l1_generator import L1Generator
 from app.knowledge.l2_generator import L2Generator
 from app.knowledge.upper_generator import L3Generator, L4Generator
@@ -25,7 +26,7 @@ class ScopeRange(BaseModel):
     end_line: int = Field(ge=1)
 
     @model_validator(mode="after")
-    def validate_line_order(self) -> ScopeRange:
+    def validate_line_order(self) -> "ScopeRange":
         if self.end_line < self.start_line:
             raise ValueError("end_line must be greater than or equal to start_line")
         return self
@@ -47,8 +48,15 @@ class BatchKnowledgeScope(BaseModel):
     namespace: str
     module: str
     feature: str
+    pipeline: Literal["legacy", "behavior_rule"] = "legacy"
     propagation: Literal["review", "auto_publish"] = "review"
     sources: list[ScopeSource] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_pipeline(self) -> "BatchKnowledgeScope":
+        if self.pipeline == "behavior_rule" and self.propagation == "auto_publish":
+            raise ValueError("behavior_rule pipeline produces reviewable drafts; use propagation=review")
+        return self
 
 
 def _parser_for(path: Path):
@@ -139,9 +147,11 @@ async def compile_scope_preview(
     commit: str,
     scope: BatchKnowledgeScope,
     l1_generator: L1Generator,
-    l2_generator: L2Generator,
+    l2_generator: L2Generator | None = None,
     l3_generator: L3Generator | None = None,
     l4_generator: L4Generator | None = None,
+    behavior_rule_generator: BehaviorRuleGenerator | None = None,
+    behavior_projector: BehaviorRuleProjector | None = None,
 ) -> dict[str, object]:
     root = Path(repository_root).resolve()
     if not root.is_dir():
@@ -207,49 +217,83 @@ async def compile_scope_preview(
         )
 
     _unique_ids(l1_items, label="compiled L1")
-    l2_items = await l2_generator.generate(
-        namespace=scope.namespace,
-        module=scope.module,
-        feature=scope.feature,
-        l1_items=l1_items,
-        existing_items=[],
-    )
-    _unique_ids([*l1_items, *l2_items], label="compiled L1/L2")
 
+    behavior_rules = []
+    l2_items = []
     l3_items = []
     l4_items = []
-    if scope.propagation == "auto_publish":
-        if l3_generator is None or l4_generator is None:
-            raise ValueError("auto_publish scope requires L3 and L4 generators")
-        l3_items = await l3_generator.generate(
+
+    if scope.pipeline == "behavior_rule":
+        if behavior_rule_generator is None or behavior_projector is None:
+            raise ValueError(
+                "behavior_rule scope requires BehaviorRuleGenerator and BehaviorRuleProjector"
+            )
+        behavior_rules = await behavior_rule_generator.generate(
+            namespace=scope.namespace,
+            facts=l1_items,
+        )
+        for rule in behavior_rules:
+            views = behavior_projector.project(
+                rule=rule,
+                module=scope.module,
+                feature=scope.feature,
+            )
+            l2_items.append(views.l2)
+            l3_items.append(views.l3)
+            l4_items.append(views.l4)
+        _unique_ids([*l1_items, *l2_items, *l3_items, *l4_items], label="compiled behavior views")
+    else:
+        if l2_generator is None:
+            raise ValueError("legacy scope requires L2Generator")
+        l2_items = await l2_generator.generate(
             namespace=scope.namespace,
             module=scope.module,
             feature=scope.feature,
-            l2_items=l2_items,
+            l1_items=l1_items,
+            existing_items=[],
         )
-        l4_items = await l4_generator.generate(
-            namespace=scope.namespace,
-            module=scope.module,
-            feature=scope.feature,
-            l3_items=l3_items,
+        _unique_ids([*l1_items, *l2_items], label="compiled L1/L2")
+
+        if scope.propagation == "auto_publish":
+            if l3_generator is None or l4_generator is None:
+                raise ValueError("auto_publish scope requires L3 and L4 generators")
+            l3_items = await l3_generator.generate(
+                namespace=scope.namespace,
+                module=scope.module,
+                feature=scope.feature,
+                l2_items=l2_items,
+            )
+            l4_items = await l4_generator.generate(
+                namespace=scope.namespace,
+                module=scope.module,
+                feature=scope.feature,
+                l3_items=l3_items,
+            )
+            _unique_ids([*l1_items, *l2_items, *l3_items, *l4_items], label="compiled knowledge")
+
+    coverage: dict[str, int] = {
+        "source_files": len(scope.sources),
+        "symbols": selected_symbol_count,
+        "l1": len(l1_items),
+        "l2": len(l2_items),
+    }
+    if scope.pipeline == "behavior_rule":
+        coverage.update(
+            {
+                "behavior_rules": len(behavior_rules),
+                "l3": len(l3_items),
+                "l4": len(l4_items),
+            }
         )
-        _unique_ids([*l1_items, *l2_items, *l3_items, *l4_items], label="compiled knowledge")
+    elif scope.propagation == "auto_publish":
+        coverage.update({"l3": len(l3_items), "l4": len(l4_items)})
 
     return {
         "scope": scope.model_dump(mode="json"),
         "commit": commit,
         "files": file_reports,
-        "coverage": {
-            "source_files": len(scope.sources),
-            "symbols": selected_symbol_count,
-            "l1": len(l1_items),
-            "l2": len(l2_items),
-            **(
-                {"l3": len(l3_items), "l4": len(l4_items)}
-                if scope.propagation == "auto_publish"
-                else {}
-            ),
-        },
+        "coverage": coverage,
+        "behavior_rules": [rule.model_dump(mode="json") for rule in behavior_rules],
         "l1_changes": [{"id": item.id, "change": "added"} for item in l1_items],
         "l1_items": [item.model_dump(mode="json") for item in l1_items],
         "l2_changes": [{"id": item.id, "change": "added"} for item in l2_items],
