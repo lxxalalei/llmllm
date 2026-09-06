@@ -1,0 +1,28 @@
+{
+  "repo": "mattermost/mattermost",
+  "ref": "master",
+  "namespace": "mattermost.channel.update",
+  "module": "mattermost.channel",
+  "feature": "channel_update",
+  "pipeline": "behavior_rule",
+  "propagation": "review",
+  "sources": [
+    {
+      "path": "server/channels/api4/channel.go",
+      "symbols": ["updateChannel", "patchChannel", "updateChannelPrivacy"]
+    },
+    {
+      "path": "server/channels/app/channel.go",
+      "symbols": [
+        "UpdateChannel",
+        "PatchChannel",
+        "UpdateChannelPrivacy",
+        "postChannelPrivacyMessage"
+      ]
+    },
+    {
+      "path": "server/channels/app/guarded_hooks.go",
+      "symbols": ["runGuardedChannelWillBeUpdated"]
+    }
+  ]
+}
