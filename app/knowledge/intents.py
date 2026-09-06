@@ -76,15 +76,24 @@ def quick_intent(question: str) -> Intent | None:
 class LLMIntentClassifier:
     """Taxonomy-based intent routing via the configured chat model."""
 
-    def __init__(self, *, api_key: str, model: str, base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        base_url: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self._model = model
+        self._reasoning_effort = reasoning_effort
 
     async def classify(self, question: str) -> Intent:
         response = await self._client.responses.create(
             model=self._model,
             instructions=CLASSIFY_INSTRUCTIONS,
             input=question,
+            reasoning={"effort": self._reasoning_effort} if self._reasoning_effort else None,
             text={
                 "format": {
                     "type": "json_schema",

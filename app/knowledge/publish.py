@@ -139,6 +139,10 @@ def plan_regeneration_publish(
     l2_changes = _change_map(preview, "l2_changes")
     l1_items = _items_map(preview, "l1_items")
     l2_items = _items_map(preview, "l2_items")
+    l3_changes = _change_map(preview, "l3_changes")
+    l4_changes = _change_map(preview, "l4_changes")
+    l3_items = _items_map(preview, "l3_items")
+    l4_items = _items_map(preview, "l4_items")
 
     writes: dict[Path, KnowledgeItem] = {}
     deletes: set[Path] = set()
@@ -180,6 +184,27 @@ def plan_regeneration_publish(
         path = existing_paths.get(knowledge_id) or _default_path(root, item)
         writes[path] = item
         upsert_ids.add(knowledge_id)
+
+    for layer, changes, items in (
+        (KnowledgeLayer.L3_PRODUCT_LOGIC, l3_changes, l3_items),
+        (KnowledgeLayer.L4_USER_KNOWLEDGE, l4_changes, l4_items),
+    ):
+        for knowledge_id, change in changes.items():
+            if change == "removed":
+                path = existing_paths.get(knowledge_id)
+                if path is None:
+                    raise ValueError(f"cannot remove missing {layer.value} knowledge: {knowledge_id}")
+                deletes.add(path)
+                delete_ids.add(knowledge_id)
+                continue
+            item = items.get(knowledge_id)
+            if item is None:
+                raise ValueError(f"changed {layer.value} missing from items: {knowledge_id}")
+            if item.layer != layer:
+                raise ValueError(f"{knowledge_id} is not {layer.value} knowledge")
+            path = existing_paths.get(knowledge_id) or _default_path(root, item)
+            writes[path] = item
+            upsert_ids.add(knowledge_id)
 
     l3_review = preview.get("l3_review", [])
     if not isinstance(l3_review, list):

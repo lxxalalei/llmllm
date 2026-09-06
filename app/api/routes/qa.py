@@ -46,7 +46,10 @@ def _build_responder() -> OpenAIQAResponder | None:
     if settings.llm_provider != "openai" or not settings.llm_api_key or not settings.llm_model:
         return None
     return OpenAIQAResponder(
-        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+        api_key=settings.llm_api_key,
+        model=settings.llm_model,
+        base_url=settings.llm_base_url,
+        reasoning_effort=settings.llm_reasoning_effort,
     )
 
 
@@ -54,7 +57,10 @@ def _build_reranker() -> LLMReranker | None:
     if not settings.rerank or not settings.llm_api_key or not settings.llm_model:
         return None
     return LLMReranker(
-        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+        api_key=settings.llm_api_key,
+        model=settings.llm_model,
+        base_url=settings.llm_base_url,
+        reasoning_effort=settings.llm_reasoning_effort,
     )
 
 
@@ -62,7 +68,10 @@ def _build_intent_classifier() -> LLMIntentClassifier | None:
     if not settings.intent_classify or not settings.llm_api_key or not settings.llm_model:
         return None
     return LLMIntentClassifier(
-        api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+        api_key=settings.llm_api_key,
+        model=settings.llm_model,
+        base_url=settings.llm_base_url,
+        reasoning_effort=settings.llm_reasoning_effort,
     )
 
 

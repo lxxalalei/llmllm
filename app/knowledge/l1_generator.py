@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.code_index import Symbol
+from app.knowledge.keys import normalize_knowledge_key
 from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus, SourceBinding, UserRole
+
+
+MAX_FACTS_PER_SYMBOL = 15
 
 
 class EngineeringFactDraft(BaseModel):
@@ -15,6 +19,8 @@ class EngineeringFactDraft(BaseModel):
     symbol: str
     title: str
     statement: str
+
+    _normalize_key = field_validator("key", mode="before")(normalize_knowledge_key)
 
 
 class EngineeringFactBatch(BaseModel):
@@ -63,6 +69,33 @@ class L1Generator:
             batch = await self._extractor.extract(symbols)
 
         symbol_map = {symbol.name: symbol for symbol in symbols}
+        fact_counts: dict[str, int] = {}
+        for fact in batch.facts:
+            fact_counts[fact.symbol] = fact_counts.get(fact.symbol, 0) + 1
+        unknown_symbols = set(fact_counts) - set(symbol_map)
+        if unknown_symbols:
+            raise ValueError(
+                "model returned unknown source symbol: "
+                + ", ".join(sorted(unknown_symbols))
+            )
+        missing_symbols = set(symbol_map) - set(fact_counts)
+        if missing_symbols:
+            raise ValueError(
+                "model returned no facts for selected symbols: "
+                + ", ".join(sorted(missing_symbols))
+            )
+        excessive = {
+            symbol: count
+            for symbol, count in fact_counts.items()
+            if count > MAX_FACTS_PER_SYMBOL
+        }
+        if excessive:
+            details = ", ".join(
+                f"{symbol}={count}" for symbol, count in sorted(excessive.items())
+            )
+            raise ValueError(
+                f"model returned more than {MAX_FACTS_PER_SYMBOL} facts per symbol: {details}"
+            )
         items: list[KnowledgeItem] = []
         seen_ids: set[str] = set()
 

@@ -105,9 +105,17 @@ class OpenAIQAResponder:
     """Structured-answer responder over the same OpenAI-compatible endpoint used
     by the L1 generator (base URL from settings, not process env)."""
 
-    def __init__(self, *, api_key: str, model: str, base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        base_url: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self._model = model
+        self._reasoning_effort = reasoning_effort
 
     async def answer(
         self,
@@ -129,6 +137,7 @@ class OpenAIQAResponder:
             model=self._model,
             instructions=instructions,
             input=prompt,
+            reasoning={"effort": self._reasoning_effort} if self._reasoning_effort else None,
             text={
                 "format": {
                     "type": "json_schema",

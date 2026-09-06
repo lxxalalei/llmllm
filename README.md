@@ -49,37 +49,35 @@ Git + PostgreSQL + Qdrant
 
 ## 当前阶段
 
-Phase 1 正在使用 Mattermost 的真实 `Channel Creation` 代码验证完整知识链。
+Phase 0–3 的代码级基础能力已经完成，当前主路线是 Phase 4「规模化知识构建」。项目正从 Mattermost `Channel Creation` 单功能样本扩展到完整 `Channel` 业务模块，当前验收对象是 `Channel Membership`。
 
-固定样本：
+当前知识资产：
 
 ```text
-repo: mattermost/mattermost
-commit: 43b2ae87e06b06abe01f9382ec26899c54c31728
-file: server/channels/app/channel.go
-symbols:
-  - CreateChannelWithUser
-  - CreateChannel
+L1: 12
+L2: 4
+L3: 4
+L4: 11
+
+draft: 18
+review: 2
+published: 11
 ```
 
-当前已经形成：
+当前已经具备：
 
-- 12 个真实 L1 Engineering Facts 人工基准（另有 2 轮真实模型 Code→L1 运行预览，未入库）
-- 4 个 L2 Engineering Rules 草稿
-- 4 个 L3 Product Logic：Mattermost `team_channel` 已 `published`（2026-09-05 产品审核批准），其余处于 `review`；另有 conversation 示例 1 个 `published`
-- 11 个 L4 FAQ：Mattermost 10 个（8 published + 2 draft）+ conversation 示例 1 个 published
-- Go/Python Tree-sitter symbol parser
-- Compiler Preview 可解析实际 Go/Python 源码内容并返回 symbol
-- OpenAI Structured Outputs `Code → L1` 生成器
-- L1 SourceBinding 由代码侧绑定，模型不能自行声明 repo/ref/file/line
-- 本地 Mattermost 固定 commit 生成验证脚本
-- Markdown + YAML Knowledge Catalog
-- L4 → L3 → L2 → L1 → Code 的递归 lineage
-- Knowledge Item / Lineage API
+- Go/Python Repository Inventory 与多文件、多 symbol 的 Batch Knowledge Compiler。
+- OpenAI Structured Outputs `Code → L1` 生成，以及基于完整 L1 Feature scope 的 `L1 → L2` 综合。
+- 由程序校验的 SourceBinding、Markdown/YAML Knowledge Catalog 和递归 lineage。
+- 按角色隔离的 Knowledge API、混合检索、grounded QA 和 Knowledge Gap 记录。
+- GitHub change intake、changed-symbol 定位、L1/L2 增量重生成、L3 Review routing、L4 过期传播和 Qdrant 增量刷新。
+- 显式审批后才写入 canonical Markdown 的发布流程。
 
-Mattermost 的 L3/L4 当前没有标记为 `published`。代码实现是证据，不自动等于已经确认的产品规则。
+下一验收项是在真实 Mattermost checkout 上执行 `config/knowledge_scopes/mattermost-channel-membership.json`，保存 L1/L2 preview，并与 [`docs/baselines/mattermost-channel-membership.md`](docs/baselines/mattermost-channel-membership.md) 逐项比较。知识质量通过后才能进入 Publish、Qdrant 和 QA 验证。
 
-### 实际运行 Code → L1
+Phase 3 仍保留一项维护验收债务：尚未用真实上游变化完成 GitHub delivery → regeneration → review/publish → Qdrant 的完整外部链路。
+
+### 运行固定样本 Code → L1
 
 准备一个处于固定 commit 的 Mattermost checkout，并配置：
 
@@ -114,7 +112,7 @@ python scripts/sync_qdrant.py     # 将 knowledge/ 资产全量同步到 Qdrant 
 
 脚本会拒绝错误 commit、目标源码本地改动、缺失目标 symbol 或缺少模型配置，不会把不匹配的源码标记成固定版本证据。
 
-当前尚未在仓库 CI 中执行真实模型调用，因为 CI 没有配置 API Key。现有 12 条 L1 继续作为真实模型输出的人工基准集。
+仓库 CI 不执行真实模型调用，因为 CI 没有配置 API Key。现有 12 条 L1 继续作为 Channel Creation 的人工基准集；Channel Membership 使用独立人工基准评估批量编译结果。
 
 ## API
 

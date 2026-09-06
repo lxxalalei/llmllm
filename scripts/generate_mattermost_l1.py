@@ -50,7 +50,10 @@ def _generator() -> L1Generator:
         raise SystemExit("Set LLM_API_KEY before running the Mattermost L1 generator")
     return L1Generator(
         OpenAIEngineeringFactExtractor(
-            api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+            base_url=settings.llm_base_url,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
     )
 

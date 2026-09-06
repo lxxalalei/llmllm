@@ -11,7 +11,13 @@ from app.knowledge import KnowledgeCatalog, KnowledgeLayer
 from app.knowledge.batch_compiler import BatchKnowledgeScope, compile_scope_preview
 from app.knowledge.l1_generator import L1Generator
 from app.knowledge.l2_generator import L2Generator
-from app.llm import OpenAIEngineeringFactExtractor, OpenAIEngineeringRuleExtractor
+from app.knowledge.upper_generator import L3Generator, L4Generator
+from app.llm import (
+    OpenAIEngineeringFactExtractor,
+    OpenAIEngineeringRuleExtractor,
+    OpenAIProductLogicExtractor,
+    OpenAIUserKnowledgeExtractor,
+)
 
 
 def _git(root: Path, *args: str) -> str:
@@ -24,7 +30,7 @@ def _git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def _generators() -> tuple[L1Generator, L2Generator]:
+def _generators() -> tuple[L1Generator, L2Generator, L3Generator, L4Generator]:
     if settings.llm_provider != "openai":
         raise SystemExit("Set LLM_PROVIDER=openai before compiling a knowledge scope")
     if not settings.llm_model:
@@ -35,10 +41,13 @@ def _generators() -> tuple[L1Generator, L2Generator]:
         "api_key": settings.llm_api_key,
         "model": settings.llm_model,
         "base_url": settings.llm_base_url,
+        "reasoning_effort": settings.llm_reasoning_effort,
     }
     return (
         L1Generator(OpenAIEngineeringFactExtractor(**kwargs)),
         L2Generator(OpenAIEngineeringRuleExtractor(**kwargs)),
+        L3Generator(OpenAIProductLogicExtractor(**kwargs)),
+        L4Generator(OpenAIUserKnowledgeExtractor(**kwargs)),
     )
 
 
@@ -64,7 +73,7 @@ async def _run(
     scope: BatchKnowledgeScope,
     commit: str,
 ) -> dict[str, object]:
-    l1_generator, l2_generator = _generators()
+    l1_generator, l2_generator, l3_generator, l4_generator = _generators()
     try:
         return await compile_scope_preview(
             repository_root=repository_root,
@@ -72,10 +81,14 @@ async def _run(
             scope=scope,
             l1_generator=l1_generator,
             l2_generator=l2_generator,
+            l3_generator=l3_generator,
+            l4_generator=l4_generator,
         )
     finally:
         await l1_generator.close()
         await l2_generator.close()
+        await l3_generator.close()
+        await l4_generator.close()
 
 
 def main() -> None:

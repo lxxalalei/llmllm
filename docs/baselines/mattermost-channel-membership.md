@@ -79,7 +79,7 @@ HTTP API
 17. 成员成功加入后会产生 `user_added` WebSocket 事件，使频道/目标用户侧能够刷新成员状态。
 18. 当存在明确 requestor 时，加入流程会异步生成 AddToChannel system post；该消息区分被加入者与操作发起者。
 19. 成员加入完成后会触发 plugin 的 `UserHasJoinedChannel` 生命周期通知；邀请场景可携带 actor/requestor 语义。
-20. 不应凭“成员加入”这一概念自动断言普通 `AddChannelMember/AddUserToChannel` 会调用 `ChannelMemberHistory.LogJoinEvent`：在本次源码检查中，显式 `LogJoinEvent` 命中集中在默认频道、频道创建、导入等其他路径。本条是反幻觉检查，不是对整个仓库“永远不记录 join history”的全局断言。
+20. `addUserToChannel` 在 `SaveMember` 成功后会调用 `ChannelMemberHistory.LogJoinEvent`；记录失败会返回内部错误，不会将本次加入当作完整成功。
 
 ### 移除与离开
 
@@ -114,7 +114,7 @@ HTTP API
 - Duplicate fact：同一条件/副作用不要因为多入口重复生成多条近义事实。
 - L2 dependency：每条 L2 `derived_from` 必须来自本次生成的 L1，不能从模型记忆补规则。
 - L2 abstraction：规则可以跨多个 L1 综合，但不能升级成未经代码支持的产品意图或安全承诺。
-- Negative check：如果模型声称普通 AddChannelMember 明确记录 join history，必须给出本 scope 中的直接代码证据，否则判为 unsupported。
+- Join-history check：如果模型声称普通 AddChannelMember 路径记录 join history，必须绑定到本 scope 中 `addUserToChannel` 的 `SaveMember` 后续 `LogJoinEvent` 直接证据。
 
 ## 5. 下一步
 

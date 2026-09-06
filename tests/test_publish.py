@@ -168,3 +168,31 @@ def test_publish_adds_and_removes_git_backed_knowledge_files(tmp_path: Path) -> 
     assert not old_path.exists()
     assert expected_new.exists()
     assert load_knowledge_file(expected_new).id == new_id
+
+
+def test_publish_writes_auto_generated_upper_layers(tmp_path: Path) -> None:
+    root = tmp_path / "knowledge"
+    l2_id = "eng.demo.channel.create.rule"
+    l3 = _l3("product.demo.channel.create.behavior", l2_id)
+    l4 = _l4("faq.demo.channel.create.answer", l3.id)
+    preview = {
+        "l1_changes": [],
+        "l1_items": [],
+        "l2_changes": [],
+        "l2_items": [],
+        "l3_changes": [{"id": l3.id, "change": "added"}],
+        "l3_items": [l3.model_dump(mode="json")],
+        "l4_changes": [{"id": l4.id, "change": "added"}],
+        "l4_items": [l4.model_dump(mode="json")],
+        "l3_review": [],
+    }
+
+    plan = plan_regeneration_publish(preview, knowledge_root=root)
+    apply_publish_plan(plan)
+
+    assert load_knowledge_file(
+        root / "l3-product-logic/demo/creation/behavior.md"
+    ).status == KnowledgeStatus.PUBLISHED
+    assert load_knowledge_file(
+        root / "l4-user-knowledge/demo/creation/answer.md"
+    ).status == KnowledgeStatus.PUBLISHED

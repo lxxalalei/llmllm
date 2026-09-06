@@ -54,7 +54,10 @@ def _configured_l1_generator() -> L1Generator | None:
         raise ValueError("LLM_API_KEY and LLM_MODEL are required when LLM_PROVIDER=openai")
     return L1Generator(
         OpenAIEngineeringFactExtractor(
-            api_key=settings.llm_api_key, model=settings.llm_model, base_url=settings.llm_base_url
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+            base_url=settings.llm_base_url,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
     )
 

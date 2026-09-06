@@ -42,9 +42,17 @@ class Reranker(Protocol):
 class LLMReranker:
     """LLM cross-encoder-style reranker over the retrieval candidates."""
 
-    def __init__(self, *, api_key: str, model: str, base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        base_url: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> None:
         self._client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self._model = model
+        self._reasoning_effort = reasoning_effort
 
     async def rerank(self, question: str, hits: list[RetrievalHit]) -> list[RetrievalHit]:
         if len(hits) <= 1:
@@ -58,6 +66,7 @@ class LLMReranker:
             model=self._model,
             instructions=_RERANK_INSTRUCTIONS,
             input=f"USER QUESTION:\n{question}\n\nKNOWLEDGE ASSETS:\n" + "\n\n".join(blocks),
+            reasoning={"effort": self._reasoning_effort} if self._reasoning_effort else None,
             text={
                 "format": {
                     "type": "json_schema",

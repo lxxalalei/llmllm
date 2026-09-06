@@ -4,6 +4,7 @@
   "namespace": "mattermost.channel.membership",
   "module": "mattermost.channel",
   "feature": "channel_membership",
+  "propagation": "auto_publish",
   "sources": [
     {
       "path": "server/channels/app/channel.go",
@@ -35,6 +36,13 @@
       "symbols": [
         "addChannelMember",
         "removeChannelMember"
+      ],
+      "ranges": [
+        {
+          "symbol": "InitChannel",
+          "start_line": 109,
+          "end_line": 109
+        }
       ]
     }
   ]

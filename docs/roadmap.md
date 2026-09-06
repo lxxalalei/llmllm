@@ -100,7 +100,7 @@ Phase 2 M2（2026-09-05）：`app/knowledge/embeddings.py`（OpenAI 兼容 Embed
 
 ## Phase 3 — 增量知识维护基础 (`completed`)
 
-实施计划：[Phase 3 增量知识编译](plans/phase3-incremental-compile.md)
+实施记录：[Phase 3 增量知识编译（已归档）](plans/archive/phase3-incremental-compile.md)
 
 - [x] Git Webhook / change intake：`POST /api/v1/webhooks/github` 接受 push，读取 GitHub compare。
 - [x] Diff Analyzer：按已有 L1 SourceBinding 的 `repository + ref + baseline commit + file` 读取 before/after 源码；漏投 Webhook 时可从知识基线补追。
@@ -132,7 +132,10 @@ M3 代码级验证：PR #5 已合并；最终 head CI #98 success，覆盖 publi
 - [x] Batch L1 → L2：基于当前 Feature 的完整 L1 集合统一综合工程规则。
 - [x] Preview 与现有 Publish 接口兼容，新 Feature 可直接进入 dry-run / approve / Markdown / Qdrant。
 - [x] Mattermost `Channel Membership` 首个 scope 描述。
-- [ ] 对真实 Mattermost checkout 运行 Channel Membership L1/L2 模型编译并审核结果。
+- [x] 对真实 Mattermost checkout 运行 Channel Membership L1/L2 模型编译并审核结果（2026-09-06：67 L1 / 19 L2，结构通过，质量未达发布标准）。
+- [x] 收紧 L1 粒度与 L2 抽象，补齐 route-level 证据后重跑 Channel Membership preview（2026-09-06：Pro 49 L1 / 10 L2，结构通过，语义仍未达发布标准）。
+- [ ] 增加语义 Review/Repair 和 baseline coverage gate，再验证 Channel Membership 发布质量。
+- [x] 增加 scope 级 `review | auto_publish` 策略与 L2→L3→L4 自动生成/发布计划链路；Mattermost 选择 `auto_publish`。
 - [ ] 扩展 Channel Permission / Update / Archive & Restore。
 - [ ] 增加 Knowledge Coverage Report。
 - [ ] 将 QA `knowledge_gap` 转换为知识构建优先级输入。

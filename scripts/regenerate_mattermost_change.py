@@ -33,6 +33,7 @@ def _configured_generators() -> tuple[L1Generator, L2Generator]:
             api_key=settings.llm_api_key,
             model=settings.llm_model,
             base_url=settings.llm_base_url,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
     )
     l2 = L2Generator(
@@ -40,6 +41,7 @@ def _configured_generators() -> tuple[L1Generator, L2Generator]:
             api_key=settings.llm_api_key,
             model=settings.llm_model,
             base_url=settings.llm_base_url,
+            reasoning_effort=settings.llm_reasoning_effort,
         )
     )
     return l1, l2

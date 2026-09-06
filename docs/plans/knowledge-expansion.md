@@ -75,7 +75,13 @@ Channel Membership 已先完成一轮人工源码追踪，基准见 [`docs/basel
 - Publish 后可检索；
 - 用真实问题验证问答覆盖。
 
-当前下一验收项：在真实 Mattermost checkout 上运行 Channel Membership Batch Compiler，保存 L1/L2 preview，与人工基准逐项比较，先验证知识质量，再进入 Publish。
+真实运行与人工审核已于 2026-09-06 完成，详见 [`docs/baselines/mattermost-channel-membership-review-2026-09-06.md`](../baselines/mattermost-channel-membership-review-2026-09-06.md)。编译链路和结构校验通过，输出 67 L1 / 19 L2；但 L1 粒度偏细、L2 抽象不足，本轮不发布。
+
+收紧迭代已完成：新增 route-level 可控 source range、L1 symbol 分块与完整性/数量门禁、L2 最多 10 条门禁；DeepSeek Pro v4 输出 49 L1 / 10 L2，所有结构门禁通过。语义复核仍发现 unsupported ordering 与高价值 L2 主题遗漏，本轮仍不发布。
+
+当前下一验收项：增加基于 source / `derived_from` 的语义 Review/Repair 阶段和基线主题 coverage gate，通过后再进入 Publish。
+
+2026-09-06 决策：Mattermost 是开源样板，不要求用户承担产品审核。Batch scope 新增 `propagation: auto_publish`，允许通过技术门禁的 L2 自动生成 Published L3/L4；默认仍是 `review`，不影响未来自有产品。首次完整运行产出 50 L1 / 9 L2 / 9 L3 / 16 L4，但自动技术复核仍发现权限范围收缩和 FAQ 条件反转，因此本次未写入 canonical knowledge。
 
 ## M4 — Coverage + Knowledge Gap
 

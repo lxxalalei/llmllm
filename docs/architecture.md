@@ -77,7 +77,7 @@ LangGraph 只负责 orchestration，不定义业务知识模型。即使未来�
 ```text
 Code → L1    高度自动化
 L1 → L2      高度自动化
-L2 → L3      需业务审核
+L2 → L3      自有产品需业务审核；开源代码样板可按 scope 选择 auto_publish
 L3 → L4      高度自动化
 ```
 

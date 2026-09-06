@@ -1,8 +1,9 @@
 # Phase 3 增量知识编译
 
-- 状态：in_progress
+- 状态：superseded
 - 路线：`docs/roadmap.md` Phase 3
 - 样本：Mattermost `Channel Creation`
+- 替代原因：Phase 3 的代码级基础能力已交付，项目主路线已切换到 Phase 4 Knowledge Expansion；未完成的真实外部端到端验收转为 roadmap 中的 Maintenance Infrastructure 验收债务。
 
 ## 目标
 
@@ -74,6 +75,12 @@ Webhook 的 `before` 用于记录本次 push，但分析基线取自 L1 的 Sour
 - PR #4：M2 Incremental regeneration 已合并；CI 覆盖 changed/removed/unchanged L1、stable ID/version、SourceBinding 推进、L2 条件重生成、L3 Review routing、未绑定 symbol 隔离及显式失败边界。
 - PR #5：M3 Publish / index refresh 当前分支 CI #94 success；自审补充了 L3 Review 时 Published L4 必须变 `outdated` 的回归测试。
 - 当前 Mattermost master 相比知识基线向前推进，但 `server/channels/app/channel.go` 尚未变化，所以还不能声称完成真实模型增量发布整链。
+
+## 收口记录
+
+- 已交付：Git change intake、增量 L1/L2、L3 Review routing、显式审批发布、L4 过期传播和 Qdrant 增量刷新均已进入 `main` 并通过 CI。
+- 未完成：真实 GitHub delivery 和真实 `channel.go` 变化驱动的完整外部发布链路。
+- 后续位置：未完成项保留在 `docs/roadmap.md` Phase 3 的验收债务说明中；当前主路线及下一验收项以 Phase 4 为准。
 
 ## 非目标
 

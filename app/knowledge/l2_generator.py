@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.knowledge.keys import normalize_knowledge_key
 from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus, UserRole
 
 
@@ -15,11 +16,13 @@ class EngineeringRuleDraft(BaseModel):
     statement: str
     derived_from: list[str] = Field(min_length=1)
 
+    _normalize_key = field_validator("key", mode="before")(normalize_knowledge_key)
+
 
 class EngineeringRuleBatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    rules: list[EngineeringRuleDraft]
+    rules: list[EngineeringRuleDraft] = Field(max_length=15)
 
 
 class EngineeringRuleExtractor(Protocol):
