@@ -8,6 +8,10 @@ from app.knowledge.keys import normalize_knowledge_key
 from app.knowledge.models import KnowledgeItem, KnowledgeLayer
 
 
+RuleScalar = str | int | float | bool
+RuleValue = RuleScalar | list[RuleScalar] | None
+
+
 class RulePredicate(BaseModel):
     """One explicit condition copied from or directly supported by source evidence."""
 
@@ -15,7 +19,7 @@ class RulePredicate(BaseModel):
 
     field: str = Field(min_length=1)
     operator: str = Field(min_length=1)
-    value: object | None = None
+    value: RuleValue = None
 
 
 class RuleConditions(BaseModel):
