@@ -53,6 +53,8 @@ def _frontmatter(item: KnowledgeItem) -> dict[str, object]:
     metadata["version"] = item.version
     if item.derived_from:
         metadata["derived_from"] = list(item.derived_from)
+    if item.behavior_rule_id:
+        metadata["behavior_rule_id"] = item.behavior_rule_id
     if item.sources:
         metadata["sources"] = [
             {
@@ -149,8 +151,6 @@ def plan_regeneration_publish(
     upsert_ids: set[str] = set()
     delete_ids: set[str] = set()
 
-    # All surviving L1 items are rewritten because even semantically unchanged
-    # facts may have a new SourceBinding commit/file/line.
     for knowledge_id, item in l1_items.items():
         if l1_changes.get(knowledge_id) == "removed":
             raise ValueError(f"removed L1 must not appear in l1_items: {knowledge_id}")
@@ -185,90 +185,66 @@ def plan_regeneration_publish(
         writes[path] = item
         upsert_ids.add(knowledge_id)
 
-    for layer, changes, items in (
-        (KnowledgeLayer.L3_PRODUCT_LOGIC, l3_changes, l3_items),
-        (KnowledgeLayer.L4_USER_KNOWLEDGE, l4_changes, l4_items),
-    ):
-        for knowledge_id, change in changes.items():
-            if change == "removed":
-                path = existing_paths.get(knowledge_id)
-                if path is None:
-                    raise ValueError(f"cannot remove missing {layer.value} knowledge: {knowledge_id}")
-                deletes.add(path)
-                delete_ids.add(knowledge_id)
-                continue
-            item = items.get(knowledge_id)
-            if item is None:
-                raise ValueError(f"changed {layer.value} missing from items: {knowledge_id}")
-            if item.layer != layer:
-                raise ValueError(f"{knowledge_id} is not {layer.value} knowledge")
-            path = existing_paths.get(knowledge_id) or _default_path(root, item)
-            writes[path] = item
-            upsert_ids.add(knowledge_id)
+    for knowledge_id, change in l3_changes.items():
+        if change == "removed":
+            path = existing_paths.get(knowledge_id)
+            if path is None:
+                raise ValueError(f"cannot remove missing L3 knowledge: {knowledge_id}")
+            deletes.add(path)
+            delete_ids.add(knowledge_id)
+            continue
+        item = l3_items.get(knowledge_id)
+        if item is None:
+            raise ValueError(f"changed L3 missing from l3_items: {knowledge_id}")
+        path = existing_paths.get(knowledge_id) or _default_path(root, item)
+        writes[path] = item
+        upsert_ids.add(knowledge_id)
 
-    l3_review = preview.get("l3_review", [])
-    if not isinstance(l3_review, list):
-        raise ValueError("l3_review must be a list")
-    review_roots: list[str] = []
-    for knowledge_id in l3_review:
+    for knowledge_id, change in l4_changes.items():
+        if change == "removed":
+            path = existing_paths.get(knowledge_id)
+            if path is None:
+                raise ValueError(f"cannot remove missing L4 knowledge: {knowledge_id}")
+            deletes.add(path)
+            delete_ids.add(knowledge_id)
+            continue
+        item = l4_items.get(knowledge_id)
+        if item is None:
+            raise ValueError(f"changed L4 missing from l4_items: {knowledge_id}")
+        path = existing_paths.get(knowledge_id) or _default_path(root, item)
+        writes[path] = item
+        upsert_ids.add(knowledge_id)
+
+    # Existing L3 review routing remains valid for legacy incremental previews.
+    for knowledge_id in preview.get("l3_review", []):
         if not isinstance(knowledge_id, str):
-            raise ValueError("l3_review must contain knowledge ids")
-        path = existing_paths.get(knowledge_id)
-        if path is None:
-            raise ValueError(f"cannot route missing L3 to review: {knowledge_id}")
-        item = load_knowledge_file(path)
-        if item.layer != KnowledgeLayer.L3_PRODUCT_LOGIC:
-            raise ValueError(f"l3_review contains non-L3 knowledge: {knowledge_id}")
-        if item.status == KnowledgeStatus.DEPRECATED:
+            raise ValueError("l3_review must contain knowledge IDs")
+        try:
+            existing = catalog.get(knowledge_id)
+        except KeyError:
             continue
-        review_roots.append(knowledge_id)
-        if item.status != KnowledgeStatus.REVIEW:
-            item = item.model_copy(update={"status": KnowledgeStatus.REVIEW})
-            writes[path] = item
-            upsert_ids.add(knowledge_id)
-
-    # A product-logic change makes already-published user knowledge derived
-    # from it unsafe to serve until L4 is regenerated/reviewed.
-    for item in upstream_items(catalog, review_roots):
-        if (
-            item.layer != KnowledgeLayer.L4_USER_KNOWLEDGE
-            or item.status != KnowledgeStatus.PUBLISHED
-        ):
+        if existing.status == KnowledgeStatus.DEPRECATED:
             continue
-        path = existing_paths.get(item.id)
-        if path is None:
-            raise ValueError(f"cannot invalidate missing L4 knowledge: {item.id}")
-        writes[path] = item.model_copy(update={"status": KnowledgeStatus.OUTDATED})
-        upsert_ids.add(item.id)
+        reviewed = existing.model_copy(update={"status": KnowledgeStatus.REVIEW})
+        path = existing_paths[knowledge_id]
+        writes[path] = reviewed
+        upsert_ids.add(knowledge_id)
 
-    overlap = set(writes) & deletes
-    if overlap:
-        raise ValueError("publish plan writes and deletes the same path")
+        for downstream in upstream_items(catalog, knowledge_id):
+            if downstream.layer != KnowledgeLayer.L4_USER_KNOWLEDGE:
+                continue
+            if downstream.status != KnowledgeStatus.PUBLISHED:
+                continue
+            outdated = downstream.model_copy(update={"status": KnowledgeStatus.OUTDATED})
+            downstream_path = existing_paths[downstream.id]
+            writes[downstream_path] = outdated
+            upsert_ids.add(downstream.id)
 
     return PublishPlan(
         writes=tuple(
-            PublishWrite(path=path, item=item)
-            for path, item in sorted(writes.items(), key=lambda pair: str(pair[0]))
+            PublishWrite(path=path, item=item) for path, item in sorted(writes.items())
         ),
-        deletes=tuple(sorted(deletes, key=str)),
+        deletes=tuple(sorted(deletes)),
         index_upsert_ids=tuple(sorted(upsert_ids)),
         index_delete_ids=tuple(sorted(delete_ids)),
     )
-
-
-def apply_publish_plan(plan: PublishPlan) -> dict[str, list[str]]:
-    missing = [path for path in plan.deletes if not path.exists()]
-    if missing:
-        raise ValueError(f"knowledge file disappeared before publish: {missing[0]}")
-
-    for write in plan.writes:
-        write.path.parent.mkdir(parents=True, exist_ok=True)
-        write.path.write_text(render_knowledge_item(write.item), encoding="utf-8")
-    for path in plan.deletes:
-        path.unlink()
-    return {
-        "written": [str(write.path) for write in plan.writes],
-        "deleted": [str(path) for path in plan.deletes],
-        "index_upsert_ids": list(plan.index_upsert_ids),
-        "index_delete_ids": list(plan.index_delete_ids),
-    }
