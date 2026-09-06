@@ -22,23 +22,15 @@
     },
     {
       "path": "server/channels/app/guarded_hooks.go",
-      "symbols": [
-        "runGuardedChannelMemberWillBeAdded"
-      ]
+      "symbols": ["runGuardedChannelMemberWillBeAdded"]
     },
     {
       "path": "server/channels/app/channel_discoverable_visibility.go",
-      "symbols": [
-        "IsDiscoverableSelfAddBlocked"
-      ]
+      "symbols": ["IsDiscoverableSelfAddBlocked"]
     },
     {
       "path": "server/channels/api4/channel.go",
-      "symbols": [
-        "InitChannel",
-        "addChannelMember",
-        "removeChannelMember"
-      ]
+      "symbols": ["addChannelMember", "removeChannelMember"]
     }
   ]
 }
