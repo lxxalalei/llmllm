@@ -1,0 +1,32 @@
+id: rule.mattermost.channel.archive_restore.restore_state_and_event
+title: 恢复会清除归档状态并广播 channel_restored
+domain: mattermost.channel
+capability: archive_restore
+actor: channel_service
+action: complete_channel_restore
+resource: channel
+conditions:
+  all:
+  - field: channel.archived
+    operator: equals
+    value: true
+  any: []
+decision: clear_archive_state_and_notify
+state_changes:
+- kind: update
+  target: channel.delete_at
+  detail: set to 0
+side_effects:
+- kind: websocket
+  target: channel_or_team
+  detail: channel_restored for non-space
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: restore state only; skip standard chat restored event/system post
+source_fact_ids:
+- eng.mattermost.channel.archive_restore.restore_state_and_event.fact

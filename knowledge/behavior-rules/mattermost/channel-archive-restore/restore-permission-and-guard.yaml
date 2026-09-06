@@ -1,0 +1,25 @@
+id: rule.mattermost.channel.archive_restore.restore_permission_and_guard
+title: 恢复归档频道需要团队管理或系统频道管理权限
+domain: mattermost.channel
+capability: archive_restore
+actor: requester
+action: restore_channel
+resource: channel
+conditions:
+  all:
+  - field: channel.archived
+    operator: equals
+    value: true
+  any:
+  - field: requester.permission.manage_team
+    operator: equals
+    value: true
+  - field: requester.permission.sysconsole_write_user_management_channels
+    operator: equals
+    value: true
+decision: allow_restore_after_guard
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.archive_restore.restore_permission_and_guard.fact

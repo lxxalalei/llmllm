@@ -1,0 +1,38 @@
+id: rule.mattermost.channel.archive_restore.archive_state_and_event
+title: 归档写入 DeleteAt 并广播频道删除事件
+domain: mattermost.channel
+capability: archive_restore
+actor: channel_service
+action: archive_channel
+resource: channel
+conditions:
+  all:
+  - field: channel.archived
+    operator: equals
+    value: false
+  any: []
+decision: soft_delete_after_archive_hooks
+state_changes:
+- kind: update
+  target: channel.delete_at
+  detail: set archive timestamp
+side_effects:
+- kind: plugin_hook
+  target: ChannelWillBeArchived
+  detail: non-space may reject
+- kind: system_post
+  target: channel
+  detail: archive message for non-space
+- kind: websocket
+  target: channel_or_team
+  detail: channel_deleted
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: skip standard chat archive hook/system post
+source_fact_ids:
+- eng.mattermost.channel.archive_restore.archive_state_and_event.fact
