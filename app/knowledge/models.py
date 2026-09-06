@@ -57,6 +57,7 @@ class KnowledgeItem(BaseModel):
     status: KnowledgeStatus = KnowledgeStatus.DRAFT
     version: int = 1
     derived_from: list[str] = Field(default_factory=list)
+    behavior_rule_id: str | None = None
     sources: list[SourceBinding] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     visible_roles: list[UserRole] = Field(default_factory=list)
