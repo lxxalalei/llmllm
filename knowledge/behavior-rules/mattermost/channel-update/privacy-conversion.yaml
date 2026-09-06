@@ -1,0 +1,48 @@
+id: rule.mattermost.channel.update.privacy_conversion
+title: 公开/私有转换使用专用权限并维护可发现申请状态
+domain: mattermost.channel
+capability: update
+actor: requester
+action: convert_channel_privacy
+resource: channel
+conditions:
+  all: []
+  any:
+  - field: target_type
+    operator: equals
+    value: open
+  - field: target_type
+    operator: equals
+    value: private
+decision: convert_with_dedicated_permission_and_rollback
+state_changes:
+- kind: update
+  target: channel.type
+  detail: open/private conversion
+side_effects:
+- kind: system_post
+  target: channel
+  detail: privacy change
+- kind: cleanup
+  target: pending_join_requests
+  detail: withdraw after discoverable private becomes open
+exceptions:
+- conditions:
+    all:
+    - field: channel.name
+      operator: equals
+      value: town-square
+    - field: target_type
+      operator: equals
+      value: private
+    any: []
+  outcome: reject conversion
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: reject conversion
+source_fact_ids:
+- eng.mattermost.channel.update.privacy_conversion.fact

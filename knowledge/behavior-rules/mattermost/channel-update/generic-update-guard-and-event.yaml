@@ -1,0 +1,32 @@
+id: rule.mattermost.channel.update.generic_update_guard_and_event
+title: 通用更新禁止归档频道改类型，并经过插件 guard
+domain: mattermost.channel
+capability: update
+actor: channel_update_service
+action: persist_channel_update
+resource: channel
+conditions:
+  all:
+  - field: channel.archived
+    operator: equals
+    value: false
+  - field: payload.type_changed
+    operator: equals
+    value: false
+  any: []
+decision: persist_after_update_guards
+state_changes: []
+side_effects:
+- kind: websocket
+  target: channel
+  detail: channel_updated for non-space
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: skip standard channel_updated chat broadcast
+source_fact_ids:
+- eng.mattermost.channel.update.generic_update_guard_and_event.fact

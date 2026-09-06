@@ -1,0 +1,28 @@
+id: rule.mattermost.channel.update.property_permission_by_type
+title: 频道属性修改权限随频道类型变化
+domain: mattermost.channel
+capability: update
+actor: requester
+action: update_channel_properties
+resource: channel
+conditions:
+  all: []
+  any:
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: channel.type
+    operator: equals
+    value: private
+  - field: channel.type
+    operator: equals
+    value: direct
+  - field: channel.type
+    operator: equals
+    value: group
+decision: apply_type_specific_property_gate
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.update.property_permission_by_type.fact
