@@ -1,3 +1,4 @@
+from app.llm.behavior_provider import OpenAIBehaviorRuleExtractor
 from app.llm.openai_provider import (
     OpenAIEngineeringFactExtractor,
     OpenAIEngineeringRuleExtractor,
@@ -6,6 +7,7 @@ from app.llm.openai_provider import (
 )
 
 __all__ = [
+    "OpenAIBehaviorRuleExtractor",
     "OpenAIEngineeringFactExtractor",
     "OpenAIEngineeringRuleExtractor",
     "OpenAIProductLogicExtractor",
