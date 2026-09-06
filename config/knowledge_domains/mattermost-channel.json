@@ -1,0 +1,11 @@
+{
+  "id": "mattermost.channel",
+  "module": "mattermost.channel",
+  "scopes": [
+    "config/knowledge_scopes/mattermost-channel-creation.json",
+    "config/knowledge_scopes/mattermost-channel-membership.json",
+    "config/knowledge_scopes/mattermost-channel-permission.json",
+    "config/knowledge_scopes/mattermost-channel-update.json",
+    "config/knowledge_scopes/mattermost-channel-archive-restore.json"
+  ]
+}
