@@ -4,7 +4,8 @@
   "namespace": "mattermost.channel.membership",
   "module": "mattermost.channel",
   "feature": "channel_membership",
-  "propagation": "auto_publish",
+  "pipeline": "behavior_rule",
+  "propagation": "review",
   "sources": [
     {
       "path": "server/channels/app/channel.go",
@@ -21,29 +22,15 @@
     },
     {
       "path": "server/channels/app/guarded_hooks.go",
-      "symbols": [
-        "runGuardedChannelMemberWillBeAdded"
-      ]
+      "symbols": ["runGuardedChannelMemberWillBeAdded"]
     },
     {
       "path": "server/channels/app/channel_discoverable_visibility.go",
-      "symbols": [
-        "IsDiscoverableSelfAddBlocked"
-      ]
+      "symbols": ["IsDiscoverableSelfAddBlocked"]
     },
     {
       "path": "server/channels/api4/channel.go",
-      "symbols": [
-        "addChannelMember",
-        "removeChannelMember"
-      ],
-      "ranges": [
-        {
-          "symbol": "InitChannel",
-          "start_line": 109,
-          "end_line": 109
-        }
-      ]
+      "symbols": ["addChannelMember", "removeChannelMember"]
     }
   ]
 }

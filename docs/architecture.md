@@ -11,20 +11,19 @@
 ```text
 Mature Product Code
         ↓
-Code Inventory / Business Scope
+Business Domain / Feature Scope
         ↓
 L1 Engineering Facts
         ↓
 BehaviorRule（结构化业务事实）
+        ├─ L2 Engineering View
+        ├─ L3 Product View
+        └─ L4 User View
         ↓
-L2 Engineering View
-L3 Product View
-L4 User View
-        ↓
-Publish / Index
+Canonical Knowledge / Index
 ```
 
-L1 负责记录代码实际行为；BehaviorRule 用于保存不应在文本改写中丢失的条件、决策、状态变化和副作用；L2/L3/L4 是面向不同角色的知识视图，不再把连续文本摘要本身当成唯一事实传递机制。
+L1 负责记录代码实际行为；BehaviorRule 用于保存不应在文本改写中丢失的条件、决策、状态变化、副作用和例外；L2/L3/L4 是面向不同角色的知识视图，不再把连续文本摘要本身当成核心事实传递机制。
 
 ### Knowledge Serve Plane
 
@@ -50,13 +49,27 @@ Answer
 
 ### KnowledgeItem
 
-系统中所有长期知识的统一抽象。关键字段包括 `id`、`layer`、`module`、`feature`、`content`、`status`、`derived_from`、`sources`、`visible_roles`。
+系统中所有长期知识的统一抽象。关键字段包括 `id`、`layer`、`module`、`feature`、`content`、`status`、`derived_from`、`sources`、`visible_roles`、`behavior_rule_id`。
 
 ### BehaviorRule
 
-目标语义层。用于保存一个业务行为中真正需要稳定传递的结构，例如 actor、action、conditions、decision、state changes、side effects 和 evidence。
+当前语义核心。用于保存一个业务行为中真正需要稳定传递的结构，例如：
+
+```text
+actor
+action
+resource
+conditions
+decision
+state_changes
+side_effects
+exceptions
+evidence
+```
 
 不是所有源码细节都必须进入 BehaviorRule；只有会影响产品行为、权限、状态或用户可见结果的事实才进入。
+
+同一条 BehaviorRule 可以投影出 L2/L3/L4，不需要把核心语义依次经过多轮自然语言摘要。
 
 ### SourceBinding
 
@@ -77,6 +90,20 @@ repo + file + symbol
 
 程序只需要保证文件和 symbol 真实存在，并把真实源码交给模型，避免模型伪造来源。
 
+### KnowledgeDomainManifest
+
+描述一个业务域由哪些 Feature scope 组成，并提供域级编译与覆盖率统计入口。
+
+当前 Mattermost Channel 域包含：
+
+```text
+Channel Creation
+Channel Membership
+Channel Permission
+Channel Update / Privacy
+Channel Archive / Restore
+```
+
 ### KnowledgeRelation
 
 保存 `derived_from / depends_on / related_to / affects / belongs_to`。
@@ -93,11 +120,11 @@ repo + file + symbol
 
 当前系统服务的主要对象是已经运行多年、功能成熟、代码变化相对较少的产品。主线资源优先投入：
 
-1. 找出业务模块和真实业务入口；
-2. 确定一个 Feature 涉及的源码范围；
-3. 从源码抽取 L1；
-4. 保留关键条件、权限、状态变化和副作用；
-5. 形成 L2/L3/L4；
+1. 按业务域和 Feature 确定源码范围；
+2. 从源码抽取 L1；
+3. 把会影响业务行为的条件、权限、状态变化和副作用结构化为 BehaviorRule；
+4. 从同一 BehaviorRule 生成 L2/L3/L4；
+5. 形成可审核的 draft knowledge；
 6. 通过真实 QA 发现知识缺口并继续补库。
 
 增量更新、Webhook、commit 对齐和行号推进属于已有维护能力，不得反过来主导知识构建架构。
@@ -110,13 +137,20 @@ repo + file + symbol
 
 ### 业务语义优先于结构合法
 
-JSON 合法、ID 唯一、`derived_from` 存在只能证明结构正确，不能证明业务语义正确。发布前真正需要关注的是：
+JSON 合法、ID 唯一、`derived_from` 存在只能证明结构正确，不能证明业务语义正确。真正需要关注的是：
 
 - 条件是否反转；
 - allow / deny 是否正确；
 - actor 范围是否被扩大或缩小；
 - 状态变化和副作用是否遗漏；
-- L2/L3/L4 是否仍然表达源码支持的同一事实。
+- L2/L3/L4 是否仍然表达 BehaviorRule 中的同一事实；
+- BehaviorRule 本身是否真的得到 L1/源码支持。
+
+### 生成不等于发布
+
+模型成功产出 L1、BehaviorRule 或角色视图，只代表“生成成功”。
+
+当前 BehaviorRule pipeline 默认输出 `draft`，不能因为 Structured Output 合法就自动成为正式知识。
 
 ### 框架只负责执行
 
@@ -126,6 +160,7 @@ LangGraph 只负责 orchestration，不定义业务知识模型。即使未来�
 
 ```text
 L1  开发/测试：代码实际上做了什么
+BehaviorRule 系统内部：真实业务条件、决策、状态与副作用
 L2  开发/测试：系统稳定的工程规则是什么
 L3  产品/测试/客服：产品行为规则是什么
 L4  普通用户：实际问题应该如何解释和处理
@@ -133,14 +168,40 @@ L4  普通用户：实际问题应该如何解释和处理
 
 代码描述当前实现，不天然代表官方产品设计；自有产品的 L3 仍可保留产品审核边界。
 
-## 6. 当前主线
+## 6. 当前实现状态
 
-- 扩大成熟产品已有源码的业务知识覆盖。
-- 从手工枚举 symbol 逐步提升到按业务入口发现相关源码。
-- 用 Channel Membership 继续验证 L1 与结构化业务规则的语义质量。
-- 扩展 Channel Permission / Update / Archive & Restore。
-- 建立按业务 Feature/领域统计的 Knowledge Coverage。
-- 将 QA `knowledge_gap` 作为下一批知识构建优先级。
+BehaviorRule 核心已经实现并接入新的 scope compiler。
+
+Mattermost Channel 已形成完整可执行业务域：
+
+```text
+Channel
+├─ Creation
+├─ Membership
+├─ Permission
+├─ Update / Privacy
+└─ Archive / Restore
+```
+
+域级编译入口：
+
+```bash
+python scripts/compile_domain.py \
+  /path/to/mattermost \
+  config/knowledge_domains/mattermost-channel.json \
+  --output-dir .scratch/channel-domain \
+  --summary .scratch/channel-domain-summary.json
+```
+
+当前还需要完成的不是继续扩基础结构，而是：
+
+1. 在真实 Mattermost checkout + 模型凭据环境跑完五个 Channel Feature；
+2. 审核完整 L1 / BehaviorRule / L2/L3/L4 的语义质量；
+3. 形成第一版 Channel Knowledge Coverage；
+4. 将通过审核的知识发布到 canonical Markdown / Qdrant；
+5. 用代表性真实问题测试 QA，并把 gap 反馈到下一批知识构建。
+
+自动 Repository Graph / 全仓调用图不再是进入这一步的前置条件；如果后续手工 scope 成本成为真实瓶颈，再按业务需要增加入口发现自动化。
 
 ## 7. 次要维护能力
 

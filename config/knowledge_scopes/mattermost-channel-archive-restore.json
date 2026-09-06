@@ -1,0 +1,23 @@
+{
+  "repo": "mattermost/mattermost",
+  "ref": "master",
+  "namespace": "mattermost.channel.archive_restore",
+  "module": "mattermost.channel",
+  "feature": "channel_archive_restore",
+  "pipeline": "behavior_rule",
+  "propagation": "review",
+  "sources": [
+    {
+      "path": "server/channels/api4/channel.go",
+      "symbols": ["deleteChannel", "restoreChannel"]
+    },
+    {
+      "path": "server/channels/app/channel.go",
+      "symbols": ["DeleteChannel", "RestoreChannel"]
+    },
+    {
+      "path": "server/channels/app/guarded_hooks.go",
+      "symbols": ["runGuardedChannelWillBeRestored"]
+    }
+  ]
+}

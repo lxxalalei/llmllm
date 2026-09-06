@@ -1,55 +1,55 @@
 # Mattermost 规模的成熟产品存量知识建库
 
 - 状态：in_progress
-- 路线：[Phase 4 — 规模化知识构建](../roadmap.md#phase-4--规模化知识构建-in_progress)
+- 路线：[Phase 4 — 成熟产品规模化知识构建](../roadmap.md)
 - 所有者：Codex（实现与技术验收）
-- 依赖：可读取的 Mattermost 固定基线 checkout；M1 不需要 LLM 凭据
+- 当前样板：Mattermost 完整 Channel 域
 
 ## 1. 目标
 
 以 Mattermost 这类已经成熟、功能稳定、代码变化相对较少的大型 IM 产品作为规模样本，验证如何从大量已有源码建立可长期使用的企业产品知识库。
 
-当前主目标不是追踪每次代码变化，而是回答：
+当前主要问题不是代码更新，而是：
 
-1. 怎么从成熟产品中发现业务模块和业务入口；
-2. 怎么确定一个 Feature 真正相关的源码范围；
-3. 怎么从源码稳定抽出 L1 Engineering Facts；
-4. 怎么保留权限、条件、状态变化和外部副作用，避免逐层文本摘要丢语义；
-5. 怎么生成适合开发、产品和普通用户使用的 L2/L3/L4；
-6. 怎么用真实 QA 发现知识缺口并继续补库。
+1. 如何把业务域拆成可控 Feature；
+2. 如何确定每个 Feature 需要读取的真实源码范围；
+3. 如何从源码稳定抽出 L1 Engineering Facts；
+4. 如何把最容易丢失的权限、条件、allow/deny、状态变化和副作用结构化；
+5. 如何从同一语义事实生成开发、产品、普通用户三种知识视图；
+6. 如何通过 QA Knowledge Gap 持续补库。
 
-## 2. 明确非目标
+## 2. 非目标
 
-当前阶段不投入主要资源做以下事情：
+当前阶段不投入主要资源做：
 
 - 高频 Git commit / branch / webhook 跟踪；
 - 全局行号同步；
 - 复杂 revision identity、SHA 链或防伪链；
-- 为建库补写大量测试；
+- 完整 Repository Graph / 全仓调用图；
+- 为每条知识补大量测试；
 - 默认运行 Mattermost 全量测试；
 - Kafka、分布式任务集群或多机调度；
-- 为了“可维护”先建设一套复杂的代码变化平台。
+- 为了“未来可维护”提前建设复杂代码变化平台。
 
-Phase 3 已经实现的增量维护能力保留，但不作为成熟产品首次建库的阻塞条件。
+Phase 3 已实现的增量维护能力保留，但不作为成熟产品首次建库阻塞条件。
 
-## 3. 主链路
+## 3. 当前主链路
 
 ```text
 成熟产品源码
     ↓
-Code Inventory
+Business Domain / Feature Scope
     ↓
-业务入口 / Feature Scope
-    ↓
-相关源码
+真实源码 symbol
     ↓
 L1 Engineering Facts
     ↓
 BehaviorRule
+    ├─ L2 Engineering View
+    ├─ L3 Product View
+    └─ L4 User View
     ↓
-L2 Engineering View
-L3 Product View
-L4 User View
+Semantic Review
     ↓
 Canonical Knowledge
     ↓
@@ -62,17 +62,15 @@ Knowledge Gap
 
 ## 4. 源码证据原则
 
-SourceBinding 的目标只有两个：
+SourceBinding 只有两个核心目标：
 
 1. 防止模型伪造源码来源；
-2. 以后人工核对时能够回到真实代码。
+2. 后续人工核对时能回到真实代码。
 
-核心证据只要求：
+核心证据：
 
 ```text
-repo
-file
-symbol
+repo + file + symbol
 ```
 
 例如：
@@ -84,235 +82,307 @@ source:
   symbol: addUserToChannel
 ```
 
-程序负责确认：
+程序负责确认文件和 symbol 真实存在，并把真实 symbol 源码交给模型。
 
-- 文件真实存在；
-- symbol 真实存在；
-- 交给模型的源码确实来自这个 symbol。
+`commit/revision` 和 `start_line/end_line` 仅作为可选辅助定位信息，不用于知识身份、首次建库门禁或全局同步。
 
-`commit/revision` 和 `start_line/end_line` 仅作为辅助定位信息：有稳定来源时可以保存，没有也不影响知识生成和发布。
-
-它们不用于：
-
-- 知识身份；
-- 首次建库门禁；
-- 行号漂移后的全量重绑；
-- 要求企业内部仓库必须具备标准 Git 历史。
-
-## 5. 每一层应该保存什么
+## 5. 每层职责
 
 ### L1 — Engineering Facts
 
 回答“代码实际上做了什么”。
 
-重点包括：
+重点：
 
 - 权限检查；
-- allow / deny 条件；
+- allow / deny；
 - actor / target；
-- 状态写入和删除；
+- 条件；
+- 状态写入/删除；
 - 特殊 bypass；
-- system post、WebSocket、plugin hook 等外部副作用。
-
-不做产品意图推断。
+- 错误分支；
+- system post；
+- WebSocket / event；
+- plugin hook；
+- 业务相关副作用。
 
 ### BehaviorRule — 结构化业务事实
 
-用于保存文本改写时最容易丢失的语义，例如：
+保存核心语义：
 
-```yaml
-actor: operator
-action: add_member
-resource: channel
-conditions:
-  - target_user.is_team_member == true
-decision: allow
-state_changes:
-  - create channel_member
-side_effects:
-  - websocket user_added
+```text
+actor
+action
+resource
+conditions
+decision
+state_changes
+side_effects
+exceptions
+evidence
 ```
 
-BehaviorRule 是语义载体，不要求把每个源码细节都结构化。只有会影响业务规则、权限、状态或用户结果的内容才进入。
+BehaviorRule 不追求覆盖所有源码细节，只保存会影响业务规则、权限、状态或用户结果的内容。
 
 ### L2 — Engineering View
 
-面向开发和测试，回答“系统真正稳定的工程规则是什么”。
-
-例如：
-
-- 成员加入是权限、team membership、group constraint、policy、guard 的多层门禁；
-- 成员移除不仅删除 ChannelMember，还清理依赖状态并触发生命周期通知。
-
-HTTP 参数格式、普通 handler 委派等细节通常停留在 L1。
+面向开发/测试，描述稳定工程规则。
 
 ### L3 — Product View
 
-面向产品、测试、客服，回答：
-
-- 谁在什么条件下可以做什么；
-- 什么情况下会被拒绝；
-- 操作成功后产品层面发生什么；
-- 有哪些例外。
-
-不暴露 Store、函数名、内部 hook 等实现细节。
+面向产品/测试/客服，描述谁在什么条件下可以做什么、拒绝规则、状态变化和例外。
 
 ### L4 — User View
 
-面向普通用户，主要是：
+面向普通员工，形成 FAQ、权限解释、错误原因、操作说明和常见场景。
 
-- FAQ；
-- 权限解释；
-- 错误原因；
-- 操作说明；
-- “为什么我不能……”；
-- “什么情况下可以……”。
+## 6. Channel Membership 试点结论
 
-L4 不自行补事实，只从已经确认的业务规则生成用户表达。
-
-## 6. 当前 Channel Membership 试点结论
-
-真实模型链路已经跑通：
+早期真实模型运行证明：
 
 ```text
-Mattermost source
-→ L1
-→ L2
+Code → L1 → L2
 ```
 
-收紧后的真实结果为 49 条 L1 / 10 条 L2，结构校验通过，但仍发现：
+技术上可以运行，但连续文本抽象出现：
 
 - L1 重复；
 - L2 抽象不稳定；
-- 条件范围表达不严谨；
-- plugin hook 顺序出现 unsupported ordering。
+- 条件范围扩大/缩小；
+- unsupported ordering；
+- self/other、allow/deny 等语义风险。
 
-因此当前问题已经不是“模型能不能调用”，而是：
+因此项目已经引入 BehaviorRule，并完成两条 Channel Membership 规则的最小语义验证：
 
-> 怎么让源码中的业务条件在知识抽象过程中不被反转、扩大、缩小或遗漏。
+- 成员移除生命周期；
+- discoverable private channel self-add 限制。
 
-这也是引入 BehaviorRule 的主要原因。
+结论：核心事实应先进入 BehaviorRule，再由同一规则生成 L2/L3/L4。
 
-## 7. 后续实施顺序
+## 7. 当前实现状态
 
-### M1 — 业务入口发现
+### 已完成：BehaviorRule Core
 
-目标：不再长期依赖人工手列 10～20 个 symbol。
+已经实现：
 
-先支持 Mattermost Channel 后端，从 API/handler 等外部入口出发，找到相关 App 方法和关键副作用。
+- BehaviorRule / conditions / state_changes / side_effects / exceptions；
+- BehaviorRuleGenerator；
+- OpenAI-compatible BehaviorRule Structured Output extractor；
+- BehaviorRuleProjector；
+- KnowledgeItem `behavior_rule_id`；
+- 三层 view 默认 Draft；
+- Channel Membership 语义测试。
 
-验收重点：
+### 已完成：BehaviorRule Scope Pipeline
 
-- 以零 LLM 调用列出 Mattermost API4 路由与对应 Go symbol；
-- 显式报告解析失败和无法绑定的入口，不静默丢弃；
-- 同一固定 checkout 重复运行得到稳定清单和可复现性报告；
-- 能看到哪些 Channel 入口已处理、哪些还没处理；
-- 不要求建立全仓完美调用图。
+`BatchKnowledgeScope` 支持：
 
-### M2 — Business Scope
-
-把一个外部入口整理成可送模型理解的业务源码范围。
-
-范围只扩展到真正影响行为的代码：
-
-- 权限和策略；
-- 状态写入/删除；
-- 错误和拒绝分支；
-- system post / event / websocket / plugin；
-- 必要的内部 helper。
-
-不把整个调用树无边界展开。
-
-### M3 — L1 + BehaviorRule
-
-继续使用模型抽 L1，但增加针对业务语义的 Review/Repair。
-
-优先解决 Channel Membership 已经暴露的问题：
-
-- self / other；
-- guest / non-guest；
-- allow / deny；
-- 完整类型集合；
-- ordering；
-- actor/requestor；
-- 状态变化和副作用。
-
-通过后形成 BehaviorRule。
-
-### M4 — L2/L3/L4 Views
-
-从同一个 BehaviorRule 分别生成：
-
-```text
-开发/测试 → L2
-产品/测试 → L3
-普通用户 → L4
+```json
+"pipeline": "behavior_rule"
 ```
 
-不再依赖 L1→L2→L3→L4 连续自然语言转述来传递核心条件。
-
-### M5 — Channel 域扩展
-
-顺序：
-
-1. Channel Membership
-2. Channel Permission
-3. Channel Update
-4. Channel Archive / Restore
-5. 复核 Channel Creation
-
-完成后形成 Channel 领域的第一版成熟知识基线。
-
-### M6 — Coverage + QA Gap
-
-覆盖率按业务能力统计，而不是按代码行数统计。
-
-至少回答：
+新 pipeline 直接执行：
 
 ```text
-Channel Creation      已覆盖
-Channel Membership    已覆盖
-Channel Permission    部分覆盖
-Channel Update        未覆盖
-Channel Archive       未覆盖
+Code
+→ L1
+→ BehaviorRule
+→ L2/L3/L4
 ```
 
-再用真实问题测试 QA。答不上来的问题进入 Knowledge Gap，作为下一批建库优先级。
+不再先调用旧的 L2 文本摘要生成器。
 
-## 8. 验收标准
+BehaviorRule pipeline 不允许 `auto_publish`。
 
-一个知识 Feature 可以进入正式知识库，至少满足：
+### 已完成：完整 Channel Domain
 
-1. 源码文件和 symbol 真实存在；
+当前五个 Feature：
+
+```text
+Channel Creation
+Channel Membership
+Channel Permission
+Channel Update / Privacy
+Channel Archive / Restore
+```
+
+配置：
+
+```text
+config/knowledge_scopes/mattermost-channel-creation.json
+config/knowledge_scopes/mattermost-channel-membership.json
+config/knowledge_scopes/mattermost-channel-permission.json
+config/knowledge_scopes/mattermost-channel-update.json
+config/knowledge_scopes/mattermost-channel-archive-restore.json
+```
+
+域 manifest：
+
+```text
+config/knowledge_domains/mattermost-channel.json
+```
+
+所有 Channel scope 均使用 `repo/file/symbol` 定位，不配置固定行号 range。
+
+### 已完成：Domain Compiler
+
+运行：
+
+```bash
+python scripts/compile_domain.py \
+  /path/to/mattermost \
+  config/knowledge_domains/mattermost-channel.json \
+  --output-dir .scratch/channel-domain \
+  --summary .scratch/channel-domain-summary.json
+```
+
+域级汇总至少包含：
+
+```text
+source_files
+symbols
+l1
+behavior_rules
+l2
+l3
+l4
+```
+
+## 8. 当前真正的下一步
+
+不再做 Repository Graph 前置验证，也不再继续围绕 Channel Membership 做概念验证。
+
+下一步直接是真实完整 Channel 域编译。
+
+### Step 1 — Real Channel Compile
+
+准备：
+
+- 可读取的 Mattermost checkout；
+- OpenAI-compatible 模型凭据。
+
+执行完整 domain compiler。
+
+目标产物：
+
+```text
+.scratch/channel-domain/
+├─ channel_creation.json
+├─ channel_membership.json
+├─ channel_permission.json
+├─ channel_update.json
+└─ channel_archive_restore.json
+
+.scratch/channel-domain-summary.json
+```
+
+### Step 2 — Semantic Review
+
+重点检查：
+
+- actor 是否正确；
+- self / other 是否正确；
+- allow / deny 是否反转；
+- all / any 是否改变；
+- 条件范围是否扩大/缩小；
+- 权限是否遗漏；
+- 状态变化是否遗漏；
+- 副作用是否凭空增加；
+- ordering 是否有真实证据；
+- L2/L3/L4 是否仍表达 BehaviorRule 中同一事实。
+
+不把 JSON 合法、ID 唯一等结构检查当成语义正确性证明。
+
+### Step 3 — Channel Knowledge Coverage
+
+形成真实覆盖报告：
+
+```text
+Feature                   Source   L1   Rules   L2   L3   L4   Review
+Channel Creation          ...      ...  ...     ...  ...  ...  ...
+Channel Membership        ...      ...  ...     ...  ...  ...  ...
+Channel Permission        ...      ...  ...     ...  ...  ...  ...
+Channel Update/Privacy    ...      ...  ...     ...  ...  ...  ...
+Channel Archive/Restore   ...      ...  ...     ...  ...  ...  ...
+```
+
+覆盖率按业务 Feature 统计，不按代码行数统计。
+
+### Step 4 — Publish
+
+只有通过语义审核的知识进入 canonical Markdown / Qdrant。
+
+模型成功生成不等于 Published。
+
+### Step 5 — QA Validation
+
+使用真实问题，例如：
+
+- 为什么能看到私有频道却不能直接加入？
+- 什么情况下可以邀请成员？
+- 被移出频道后哪些状态会变化？
+- 谁可以修改频道权限？
+- 频道归档后还能恢复吗？
+- 谁可以修改频道公开/私有属性？
+
+无法回答的问题记录为 Knowledge Gap。
+
+### Step 6 — Gap-driven Expansion
+
+根据真实 Gap 决定下一业务域，而不是按代码目录机械扩展。
+
+候选域：
+
+- Team；
+- User / Account；
+- Post / Message；
+- Roles / Permission；
+- Notification；
+- Search；
+- File / Attachment；
+- Call / Meeting。
+
+## 9. 验收标准
+
+一个 Feature 可进入正式知识库，至少满足：
+
+1. repo/file/symbol 真实存在；
 2. L1 没有明显 unsupported fact；
-3. 权限、allow/deny、actor、条件范围没有反转或扩大；
-4. 关键状态变化和外部副作用没有明显遗漏；
-5. L2 是工程规则，不是 L1 的机械改写；
-6. L3/L4 不添加上游不存在的新事实；
-7. QA 能使用该知识回答代表性真实问题并回到源码证据。
+3. BehaviorRule 的关键条件和结果有 L1/源码证据；
+4. allow/deny、actor、self/other、all/any 没有反转；
+5. 关键状态变化和副作用没有明显遗漏；
+6. L2 是工程规则，不是 L1 的机械复述；
+7. L3/L4 不增加 BehaviorRule 不支持的新事实；
+8. QA 能回答代表性真实问题；
+9. 需要时可以追溯到真实源码。
 
 不要求：
 
-- 每条知识绑定固定行号；
+- 每条知识固定行号；
 - 每条知识必须固定 commit；
 - 为每条规则新增测试；
 - 一次模型输出零错误；
-- 全仓一次性完成。
+- 全仓一次完成；
+- 首次建库前完成 Repository Graph。
 
-## 9. 决策记录
+## 10. 决策记录
 
-### 2026-09-06 — 成熟产品首次建库优先
+### 2026-09-06 — Mature Product First
 
 当前产品形态是成熟大型 IM，代码变化不是主要矛盾。系统首先解决“已有代码如何变成高质量知识”，增量维护保持次要位置。
 
 ### 2026-09-06 — SourceBinding 只承担可追溯
 
-核心源码身份使用 `repo + file + symbol`。revision/commit/line 是可选定位信息，不参与知识身份和首次建库门禁，不建设以版本追踪为中心的防御性验证体系。
+核心源码身份使用 `repo + file + symbol`。revision/commit/line 是可选定位信息，不参与知识身份和首次建库门禁。
 
-### 2026-09-06 — 结构化规则承接跨角色语义
+### 2026-09-06 — BehaviorRule 承接跨角色语义
 
-L1 保留工程事实；BehaviorRule 保存关键业务条件和结果；L2/L3/L4 作为不同角色视图生成，减少连续文本摘要造成的语义漂移。
+L1 保存工程事实；BehaviorRule 保存关键业务条件和结果；L2/L3/L4 从同一规则生成。
 
-## 10. 下一验收项
+### 2026-09-06 — 生成与发布分离
 
-在固定 Mattermost checkout 上，以零 LLM 调用生成稳定的 API4 路由与 Go symbol 清单、解析失败列表和可复现性报告，为 Channel 业务切片建立 Repository Graph 基线。该项通过后再进入 M2 Business Scope；Channel Membership 的 BehaviorRule 语义修复属于后续 M3，不再冒充当前步骤。
+BehaviorRule pipeline 默认 Draft，禁止把生成成功直接视为正式发布。
+
+### 2026-09-06 — Repository Graph 不再是当前前置条件
+
+已有明确 Channel Feature scope 时直接开始建库。只有当 scope 维护成本成为真实问题时，再引入入口发现或调用图自动化。
