@@ -6,9 +6,10 @@
 
 - 当前主路线：`Phase 4 — 规模化知识构建 / Knowledge Expansion`
 - 路线状态：`in_progress`
-- 当前里程碑：`M1/M2 — Repository Inventory + Batch Knowledge Compiler`
-- 当前样本：Mattermost `Channel` 模块，从 `Channel Creation` 扩展到 Membership / Permission / Update / Archive & Restore。
-- 下一验收项：先对 Mattermost Channel 范围运行 Repository Inventory，再用 `config/knowledge_scopes/mattermost-channel-membership.json` 执行首个多文件/多 symbol 的 L1/L2 编译 preview，核对事实/规则质量后进入 Publish 与 QA 验证。
+- 当前里程碑：`M1 — Mattermost Go Repository Graph`
+- 当前样本：Mattermost 固定基线 `b3946ef5e2b85a27d365af2592cf1262de6a665e`，以完整成熟产品的首次存量建库为目标。
+- 当前实施计划：[Mattermost 规模的成熟产品存量知识建库](plans/mattermost-scale-knowledge-bootstrap.md)
+- 下一验收项：以零 LLM 调用生成稳定的 Mattermost API4 路由与 Go symbol 清单、解析失败列表和可复现性报告，为后续 Channel 业务切片建立 Repository Graph 基线。
 - 当前阻塞：无。Phase 3 的增量维护基础能力已经具备，真实上游 change delivery/整链运行保留为维护能力验收债务，不再阻塞知识库扩容主线。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
