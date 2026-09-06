@@ -1,0 +1,39 @@
+id: rule.mattermost.channel.creation.create_permission_gate
+title: 公开/私有频道创建由对应权限门禁
+domain: mattermost.channel
+capability: creation
+actor: authenticated_user
+action: create_channel
+resource: channel
+conditions:
+  all:
+  - field: session.authenticated
+    operator: equals
+    value: true
+  any:
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: channel.type
+    operator: equals
+    value: private
+decision: require_type_specific_create_permission
+state_changes: []
+side_effects: []
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: open
+    any: []
+  outcome: requires create_public_channel
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: private
+    any: []
+  outcome: requires create_private_channel
+source_fact_ids:
+- eng.mattermost.channel.creation.create_permission_gate.fact

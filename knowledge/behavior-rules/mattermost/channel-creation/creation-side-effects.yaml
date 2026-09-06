@@ -1,0 +1,35 @@
+id: rule.mattermost.channel.creation.creation_side_effects
+title: 标准频道创建会触发聊天侧生命周期副作用
+domain: mattermost.channel
+capability: creation
+actor: channel_creator
+action: finish_channel_creation
+resource: channel
+conditions:
+  all: []
+  any: []
+decision: emit_creation_side_effects
+state_changes:
+- kind: update
+  target: channel_category
+  detail: add to creator default category
+side_effects:
+- kind: system_post
+  target: channel
+  detail: join message
+- kind: websocket
+  target: creator
+  detail: channel_created
+- kind: plugin_hook
+  target: ChannelHasBeenCreated
+  detail: non-space channels
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: skip standard chat plugin hook
+source_fact_ids:
+- eng.mattermost.channel.creation.creation_side_effects.fact

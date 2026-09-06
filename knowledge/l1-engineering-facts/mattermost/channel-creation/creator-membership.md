@@ -1,19 +1,28 @@
 ---
-id: eng.mattermost.channel.create.creator_membership
+id: eng.mattermost.channel.creation.creator_membership.fact
 layer: L1
 module: mattermost.channel
 feature: channel_creation
-status: draft
+status: review
 version: 1
 sources:
-  - repo: mattermost/mattermost
-    ref: master
-    commit: 43b2ae87e06b06abe01f9382ec26899c54c31728
-    file: server/channels/app/channel.go
-    symbol: CreateChannel
-visible_roles: [developer, test]
+- repo: mattermost/mattermost
+  ref: master
+  file: server/channels/app/channel.go
+  symbol: CreateChannelWithUser
+- repo: mattermost/mattermost
+  ref: master
+  file: server/channels/app/channel.go
+  symbol: CreateChannel
+tags:
+- mattermost
+- channel
+- channel_creation
+visible_roles:
+- developer
+- test
 ---
 
-# addMember=true 时创建者会成为频道成员
+# 创建标准频道会建立创建者成员关系
 
-`CreateChannel` 在 `addMember=true` 时读取创建者用户并保存 `ChannelMember`。成员记录使用默认通知设置，且 `SchemeAdmin=true`。
+`CreateChannelWithUser` 先检查团队频道数量上限并把 `CreatorId` 设为当前用户。`CreateChannel(addMember=true)` 保存频道后创建该用户的 ChannelMember，设置 `SchemeAdmin=true`，按 guest 状态设置 SchemeGuest/SchemeUser，并记录 ChannelMemberHistory join event。

@@ -1,0 +1,25 @@
+id: rule.mattermost.channel.creation.discoverable_private_creation
+title: 可发现私有频道创建有额外门禁
+domain: mattermost.channel
+capability: creation
+actor: authenticated_user
+action: create_discoverable_channel
+resource: private_channel
+conditions:
+  all:
+  - field: feature.discoverable_channels
+    operator: equals
+    value: true
+  - field: channel.type
+    operator: equals
+    value: private
+  - field: actor.permission.manage_private_channel_discoverability
+    operator: equals
+    value: true
+  any: []
+decision: allow_creation
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.creation.discoverable_private_creation.fact

@@ -1,0 +1,27 @@
+id: rule.mattermost.channel.creation.creator_membership
+title: 创建标准频道会建立创建者成员关系
+domain: mattermost.channel
+capability: creation
+actor: channel_creator
+action: create_standard_channel
+resource: channel
+conditions:
+  all:
+  - field: team.channel_count
+    operator: below_configured_limit
+    value: null
+  any: []
+decision: create_channel_and_creator_membership
+state_changes:
+- kind: create
+  target: channel
+- kind: create
+  target: channel_member
+  detail: creator is SchemeAdmin
+- kind: record
+  target: channel_member_history
+  detail: join event
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.creation.creator_membership.fact
