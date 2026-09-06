@@ -1,0 +1,30 @@
+{
+  "repo": "mattermost/mattermost",
+  "ref": "master",
+  "namespace": "mattermost.channel.permission",
+  "module": "mattermost.channel",
+  "feature": "channel_permission",
+  "pipeline": "behavior_rule",
+  "propagation": "review",
+  "sources": [
+    {
+      "path": "server/channels/api4/channel.go",
+      "symbols": [
+        "updateChannelMemberRoles",
+        "updateChannelMemberSchemeRoles",
+        "getChannelModerations",
+        "patchChannelModerations"
+      ]
+    },
+    {
+      "path": "server/channels/app/channel.go",
+      "symbols": [
+        "UpdateChannelMemberRoles",
+        "updateChannelMemberRolesInternal",
+        "UpdateChannelMemberSchemeRoles",
+        "GetChannelModerationsForChannel",
+        "PatchChannelModerationsForChannel"
+      ]
+    }
+  ]
+}
