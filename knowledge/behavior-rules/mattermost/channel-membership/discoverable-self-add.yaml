@@ -1,0 +1,38 @@
+id: rule.mattermost.channel.membership.discoverable_self_add
+title: 可发现私有频道的直接 self-add 会转入申请流程
+domain: mattermost.channel
+capability: membership
+actor: current_user
+action: add_self_to_channel
+resource: private_channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: private
+  - field: channel.discoverable
+    operator: equals
+    value: true
+  - field: channel.policy_enforced
+    operator: equals
+    value: false
+  - field: requester_id
+    operator: equals_field
+    value: target_user_id
+  - field: feature.discoverable_channels
+    operator: equals
+    value: true
+  any: []
+decision: reject_direct_self_add
+state_changes: []
+side_effects: []
+exceptions:
+- conditions:
+    all:
+    - field: requester_id
+      operator: not_equals_field
+      value: target_user_id
+    any: []
+  outcome: this rule does not block admin/other-user add
+source_fact_ids:
+- eng.mattermost.channel.membership.discoverable_self_add.fact

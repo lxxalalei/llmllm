@@ -1,0 +1,29 @@
+id: rule.mattermost.channel.membership.add_integrity_constraints
+title: 成员加入同时受团队、频道类型和群组约束
+domain: mattermost.channel
+capability: membership
+actor: membership_service
+action: persist_channel_member
+resource: channel_member
+conditions:
+  all:
+  - field: channel.type
+    operator: in
+    value:
+    - open
+    - private
+    - space
+  any: []
+decision: allow_only_after_membership_integrity_checks
+state_changes: []
+side_effects: []
+exceptions:
+- conditions:
+    all:
+    - field: opts.skip_team_member_integrity_check
+      operator: equals
+      value: true
+    any: []
+  outcome: skip only team membership integrity check
+source_fact_ids:
+- eng.mattermost.channel.membership.add_integrity_constraints.fact

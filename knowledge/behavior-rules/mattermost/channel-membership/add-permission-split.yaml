@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.membership.add_permission_split
+title: 加入自己与添加他人使用不同权限
+domain: mattermost.channel
+capability: membership
+actor: requester
+action: add_channel_member
+resource: channel
+conditions:
+  all: []
+  any:
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: channel.type
+    operator: equals
+    value: private
+decision: require_permission_by_actor_target_and_channel_type
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_permission_split.fact

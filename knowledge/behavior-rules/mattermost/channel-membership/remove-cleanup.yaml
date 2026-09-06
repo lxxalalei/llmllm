@@ -1,0 +1,50 @@
+id: rule.mattermost.channel.membership.remove_cleanup
+title: 移除成员会同步清理依赖状态并双路通知
+domain: mattermost.channel
+capability: membership
+actor: requester
+action: remove_channel_member
+resource: channel_member
+conditions:
+  all:
+  - field: target.is_channel_member
+    operator: equals
+    value: true
+  any: []
+decision: remove_membership_and_dependent_state
+state_changes:
+- kind: delete
+  target: channel_member
+  detail: remove membership
+- kind: delete
+  target: thread_memberships
+  detail: all for user in channel
+- kind: record
+  target: channel_member_history
+  detail: leave event
+side_effects:
+- kind: plugin_hook
+  target: UserHasLeftChannel
+  detail: after removal
+- kind: websocket
+  target: channel
+  detail: user_removed
+- kind: websocket
+  target: removed_user
+  detail: user_removed
+- kind: system_post
+  target: channel
+  detail: leave if self, remove if another actor
+exceptions:
+- conditions:
+    all:
+    - field: channel.name
+      operator: equals
+      value: town-square
+    - field: target.is_guest
+      operator: equals
+      value: false
+    any: []
+  outcome: reject removal
+source_fact_ids:
+- eng.mattermost.channel.membership.remove_cleanup.fact

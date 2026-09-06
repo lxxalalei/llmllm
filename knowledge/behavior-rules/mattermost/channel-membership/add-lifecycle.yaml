@@ -1,0 +1,34 @@
+id: rule.mattermost.channel.membership.add_lifecycle
+title: 成员加入成功后记录历史并同步多端状态
+domain: mattermost.channel
+capability: membership
+actor: membership_service
+action: complete_member_add
+resource: channel_member
+conditions:
+  all:
+  - field: channel_member.persisted
+    operator: equals
+    value: true
+  any: []
+decision: emit_member_join_lifecycle
+state_changes:
+- kind: record
+  target: channel_member_history
+  detail: join event
+side_effects:
+- kind: plugin_hook
+  target: UserHasJoinedChannel
+  detail: after add
+- kind: system_post
+  target: channel
+  detail: join or added depending on actor
+- kind: websocket
+  target: channel
+  detail: user_added
+- kind: websocket
+  target: added_user
+  detail: user_added
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_lifecycle.fact
