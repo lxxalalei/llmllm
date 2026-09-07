@@ -3,7 +3,7 @@ id: faq.mattermost.channel.update.property_permission_by_type
 layer: L4
 module: mattermost.channel
 feature: channel_update
-status: published
+status: review
 version: 1
 derived_from:
 - product.mattermost.channel.update.property_permission_by_type

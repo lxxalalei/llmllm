@@ -3,7 +3,7 @@ id: product.mattermost.channel.permission.manage_member_roles
 layer: L3
 module: mattermost.channel
 feature: channel_permission
-status: published
+status: review
 version: 1
 derived_from:
 - eng.mattermost.channel.permission.manage_member_roles.behavior

@@ -3,7 +3,7 @@ id: eng.mattermost.channel.archive_restore.archive_permission_and_default.fact
 layer: L1
 module: mattermost.channel
 feature: channel_archive_restore
-status: published
+status: review
 version: 1
 sources:
 - repo: mattermost/mattermost

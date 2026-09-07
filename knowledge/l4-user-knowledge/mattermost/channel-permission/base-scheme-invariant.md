@@ -3,7 +3,7 @@ id: faq.mattermost.channel.permission.base_scheme_invariant
 layer: L4
 module: mattermost.channel
 feature: channel_permission
-status: published
+status: review
 version: 1
 derived_from:
 - product.mattermost.channel.permission.base_scheme_invariant

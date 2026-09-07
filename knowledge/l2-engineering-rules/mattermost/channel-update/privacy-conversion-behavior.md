@@ -3,7 +3,7 @@ id: eng.mattermost.channel.update.privacy_conversion.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_update
-status: published
+status: review
 version: 1
 derived_from:
 - eng.mattermost.channel.update.privacy_conversion.fact

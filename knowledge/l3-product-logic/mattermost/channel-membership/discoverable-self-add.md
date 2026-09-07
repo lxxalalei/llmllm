@@ -3,7 +3,7 @@ id: product.mattermost.channel.membership.discoverable_self_add
 layer: L3
 module: mattermost.channel
 feature: channel_membership
-status: published
+status: review
 version: 1
 derived_from:
 - eng.mattermost.channel.membership.discoverable_self_add.behavior

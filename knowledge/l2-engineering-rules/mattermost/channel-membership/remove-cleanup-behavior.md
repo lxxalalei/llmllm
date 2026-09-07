@@ -3,7 +3,7 @@ id: eng.mattermost.channel.membership.remove_cleanup.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_membership
-status: published
+status: review
 version: 1
 derived_from:
 - eng.mattermost.channel.membership.remove_cleanup.fact
