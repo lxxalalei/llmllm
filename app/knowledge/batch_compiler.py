@@ -240,7 +240,8 @@ async def compile_scope_preview(
             )
             l2_items.append(views.l2)
             l3_items.append(views.l3)
-            l4_items.append(views.l4)
+            if views.l4 is not None:
+                l4_items.append(views.l4)
         _unique_ids([*l1_items, *l2_items, *l3_items, *l4_items], label="compiled behavior views")
     else:
         if l2_generator is None:
