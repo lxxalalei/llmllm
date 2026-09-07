@@ -25,7 +25,7 @@ def _fact(knowledge_id: str) -> KnowledgeItem:
     )
 
 
-def test_remove_member_rule_projects_one_semantic_source_into_three_views() -> None:
+def test_remove_member_rule_projects_engineering_and_product_views_only() -> None:
     rule = BehaviorRule(
         id="rule.mattermost.channel.membership.remove_member",
         title="Channel member removal lifecycle",
@@ -58,13 +58,12 @@ def test_remove_member_rule_projects_one_semantic_source_into_three_views() -> N
 
     assert views.l2.behavior_rule_id == rule.id
     assert views.l3.behavior_rule_id == rule.id
-    assert views.l4.behavior_rule_id == rule.id
+    assert views.l4 is None
     assert views.l2.derived_from == rule.source_fact_ids
     assert views.l3.derived_from == [views.l2.id]
-    assert views.l4.derived_from == [views.l3.id]
-    assert {views.l2.status, views.l3.status, views.l4.status} == {KnowledgeStatus.DRAFT}
+    assert {views.l2.status, views.l3.status} == {KnowledgeStatus.DRAFT}
 
-    for content in (views.l2.content, views.l3.content, views.l4.content):
+    for content in (views.l2.content, views.l3.content):
         assert "channel member" in content
         assert "channel thread memberships" in content
         assert "user removed to channel" in content
@@ -113,7 +112,7 @@ def test_discoverable_self_add_rule_preserves_all_conditions_direction_and_excep
         feature="channel_membership",
     )
 
-    for content in (views.l2.content, views.l3.content, views.l4.content):
+    for content in (views.l2.content, views.l3.content):
         assert "channel.type equals private" in content
         assert "channel.discoverable equals true" in content
         assert "channel.policy enforced equals false" in content
@@ -124,10 +123,29 @@ def test_discoverable_self_add_rule_preserves_all_conditions_direction_and_excep
 
     assert "reject_direct_add" in views.l2.content
     assert "reject direct add" in views.l3.content
-    assert "reject direct add" in views.l4.content
     assert "target.is_member" not in views.l2.content
     assert "target.is_member" not in views.l3.content
-    assert "target.is_member" not in views.l4.content
+    assert views.l4 is None
+
+
+def test_user_knowledge_can_reference_multiple_behavior_rules() -> None:
+    item = KnowledgeItem(
+        id="faq.mattermost.channel.membership.cannot_join",
+        title="Why can I see a channel but still not join?",
+        layer=KnowledgeLayer.L4_USER_KNOWLEDGE,
+        module="mattermost.channel",
+        feature="channel_membership",
+        content="User-intent answer.",
+        behavior_rule_ids=[
+            "rule.mattermost.channel.membership.discoverable_self_add",
+            "rule.mattermost.channel.membership.add_permission_split",
+        ],
+    )
+
+    assert item.linked_behavior_rule_ids == [
+        "rule.mattermost.channel.membership.discoverable_self_add",
+        "rule.mattermost.channel.membership.add_permission_split",
+    ]
 
 
 class UnknownFactExtractor:
