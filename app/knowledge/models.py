@@ -57,12 +57,24 @@ class KnowledgeItem(BaseModel):
     status: KnowledgeStatus = KnowledgeStatus.DRAFT
     version: int = 1
     derived_from: list[str] = Field(default_factory=list)
+    # L2/L3 normally map to one semantic rule. Kept for compatibility with
+    # existing canonical assets.
     behavior_rule_id: str | None = None
+    # L4 is user-intent knowledge, so one FAQ may combine multiple rules.
+    behavior_rule_ids: list[str] = Field(default_factory=list)
     sources: list[SourceBinding] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     visible_roles: list[UserRole] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def linked_behavior_rule_ids(self) -> list[str]:
+        """Return all semantic rules supporting this knowledge item."""
+        ids = list(self.behavior_rule_ids)
+        if self.behavior_rule_id:
+            ids.insert(0, self.behavior_rule_id)
+        return list(dict.fromkeys(ids))
 
 
 class KnowledgeRelation(BaseModel):
