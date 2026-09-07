@@ -13,5 +13,3 @@ visible_roles: [user, product, test, developer]
 # 为什么我不能继续创建频道？
 
 如果当前团队已经达到允许的频道数量上限，系统会阻止继续创建新频道。
-
-> 已发布（2026-09-05）：对应 L3 产品逻辑（team_channel）已发布，本条 FAQ 对普通用户可见。
