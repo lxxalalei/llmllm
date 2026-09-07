@@ -29,7 +29,6 @@ def _item(catalog: KnowledgeCatalog, knowledge_id: str):
 def test_user_sees_only_published_l3_l4_where_user_is_authorized(catalog) -> None:
     visible = visible_items(list(catalog._items.values()), UserRole.USER)
     assert any(item.id == LIMIT_FAQ for item in visible)
-    # boundary: no draft L4, no review L3, no L3 without user in visible_roles
     assert all(
         item.status == KnowledgeStatus.PUBLISHED
         and item.layer in (KnowledgeLayer.L3_PRODUCT_LOGIC, KnowledgeLayer.L4_USER_KNOWLEDGE)
@@ -43,32 +42,53 @@ def test_user_sees_only_published_l3_l4_where_user_is_authorized(catalog) -> Non
     assert not role_allows(UserRole.USER, _item(catalog, TEAM_LIMIT_L1))
 
 
-def test_product_and_test_layer_boundaries(catalog) -> None:
-    # product: L3/L2 for review and product work; L1 is developer/test-only in assets
+def test_product_and_test_use_published_assets_in_normal_serve(catalog) -> None:
     assert role_allows(UserRole.PRODUCT, _item(catalog, TEAM_CHANNEL_L3))
-    assert role_allows(UserRole.PRODUCT, _item(catalog, MANAGED_L3))  # review visible for review work
-    assert role_allows(UserRole.PRODUCT, _item(catalog, STANDARD_FLOW_L2))
+    assert not role_allows(UserRole.PRODUCT, _item(catalog, MANAGED_L3))
+    assert not role_allows(UserRole.PRODUCT, _item(catalog, STANDARD_FLOW_L2))
     assert not role_allows(UserRole.PRODUCT, _item(catalog, TEAM_LIMIT_L1))
-    # test: same as product, plus L1 engineering facts (test needs code detail)
     assert role_allows(UserRole.TEST, _item(catalog, TEAM_LIMIT_L1))
 
 
-def test_developer_sees_l1_l2_and_published_upper_layers(catalog) -> None:
+def test_review_mode_explicitly_allows_unpublished_role_assets(catalog) -> None:
+    assert role_allows(
+        UserRole.PRODUCT,
+        _item(catalog, MANAGED_L3),
+        include_unpublished=True,
+    )
+    assert role_allows(
+        UserRole.PRODUCT,
+        _item(catalog, STANDARD_FLOW_L2),
+        include_unpublished=True,
+    )
+    assert not role_allows(
+        UserRole.PRODUCT,
+        _item(catalog, TEAM_LIMIT_L1),
+        include_unpublished=True,
+    )
+
+
+def test_developer_serve_and_review_boundaries(catalog) -> None:
     assert role_allows(UserRole.DEVELOPER, _item(catalog, TEAM_LIMIT_L1))
-    assert role_allows(UserRole.DEVELOPER, _item(catalog, STANDARD_FLOW_L2))
+    assert not role_allows(UserRole.DEVELOPER, _item(catalog, STANDARD_FLOW_L2))
+    assert role_allows(
+        UserRole.DEVELOPER,
+        _item(catalog, STANDARD_FLOW_L2),
+        include_unpublished=True,
+    )
     assert role_allows(UserRole.DEVELOPER, _item(catalog, TEAM_CHANNEL_L3))
     assert role_allows(UserRole.DEVELOPER, _item(catalog, LIMIT_FAQ))
 
 
-def test_drill_lower_boundaries(catalog) -> None:
+def test_drill_respects_normal_serve_status(catalog) -> None:
     l3 = _item(catalog, TEAM_CHANNEL_L3)
-    # product drills L3 -> L2
-    parents = drill_down(catalog, l3, UserRole.PRODUCT)
+    # Its historical L2 parents are draft, so normal product serve does not expose them.
+    assert drill_down(catalog, l3, UserRole.PRODUCT) == []
+    # Management/review view can still inspect raw lineage.
+    parents = drill_down(catalog, l3, None)
     assert len(parents) == 2
     assert all(item.layer == KnowledgeLayer.L2_ENGINEERING_RULE for item in parents)
-    # user cannot drill into L3 (not authorized) even when published
     assert drill_down(catalog, l3, UserRole.USER) == []
-    # developer drilling an L4 FAQ reaches the published L3
     faq = _item(catalog, LIMIT_FAQ)
     assert [p.id for p in drill_down(catalog, faq, UserRole.DEVELOPER)] == [TEAM_CHANNEL_L3]
     assert drill_down(catalog, faq, UserRole.USER) == []
@@ -83,7 +103,6 @@ def test_developer_locates_pinned_code_via_l1(catalog) -> None:
     assert source.commit == "43b2ae87e06b06abe01f9382ec26899c54c31728"
     assert source.file == "server/channels/app/channel.go"
     assert source.symbol in ("CreateChannelWithUser", "CreateChannel")
-    # manual assets bind repo/commit/file/symbol; line ranges are optional here
     assert source.start_line is None or isinstance(source.start_line, int)
 
 
@@ -99,27 +118,24 @@ def test_api_list_role_user_returns_only_published_user_knowledge() -> None:
     assert all(item["status"] == "published" for item in payload)
 
 
-def test_api_detail_enforces_role_visibility() -> None:
+def test_api_detail_uses_normal_serve_visibility() -> None:
     assert client.get(f"/api/v1/knowledge/{LIMIT_FAQ}", params={"role": "user"}).status_code == 200
-    # forbidden to a role -> indistinguishable 404 (no enumeration)
     assert client.get(f"/api/v1/knowledge/{TEAM_CHANNEL_L3}", params={"role": "user"}).status_code == 404
     assert client.get(f"/api/v1/knowledge/{MANAGED_L3}", params={"role": "user"}).status_code == 404
-    assert client.get(f"/api/v1/knowledge/{MANAGED_L3}", params={"role": "product"}).status_code == 200
+    assert client.get(f"/api/v1/knowledge/{MANAGED_L3}", params={"role": "product"}).status_code == 404
     assert client.get(f"/api/v1/knowledge/{LIMIT_FAQ}", params={"role": "bogus"}).status_code == 422
 
 
-def test_api_lineage_and_drill_enforce_role() -> None:
-    ok = client.get(f"/api/v1/knowledge/{LIMIT_FAQ}/lineage", params={"role": "user"})
+def test_api_lineage_and_drill_enforce_serve_visibility() -> None:
+    ok = client.get(f"/api/v1/knowledge/{LIMIT_FAQ}/lineage", params={"role": "user")
     assert ok.status_code == 200
-    hidden = client.get(f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/lineage", params={"role": "user"})
+    hidden = client.get(f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/lineage", params={"role": "user")
     assert hidden.status_code == 404
     drill = client.get(
         f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/drill", params={"role": "product"}
     )
     assert drill.status_code == 200
-    items = drill.json()
-    assert len(items) == 2
-    assert all(item["layer"] == "L2" for item in items)
+    assert drill.json() == []
     assert client.get(
         f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/drill", params={"role": "user"}
     ).status_code == 404
