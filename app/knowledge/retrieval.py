@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from app.knowledge import KnowledgeCatalog
 from app.knowledge.bm25 import BM25Index
 from app.knowledge.models import KnowledgeItem
-from app.knowledge.views import visible_items
+from app.knowledge.views import role_allows, visible_items
 
 
 @dataclass(frozen=True)
@@ -23,13 +23,19 @@ def retrieve(
     question: str,
     role,
     top_k: int = 4,
+    *,
+    review_mode: bool = False,
 ) -> list[RetrievalHit]:
     """Sparse (BM25) retrieval over role-visible knowledge assets.
 
-    The function contract is the replacement point for a Qdrant-backed
-    retriever; dense retrieval lives in retrieve_hybrid below.
+    Normal retrieval only sees Published assets. Knowledge-review tooling must
+    opt in explicitly with ``review_mode=True``.
     """
-    candidates = visible_items(list(catalog._items.values()), role)
+    candidates = visible_items(
+        list(catalog._items.values()),
+        role,
+        include_unpublished=review_mode,
+    )
     if not candidates:
         return []
     index = BM25Index([(_text_of(item), item) for item in candidates])
@@ -53,11 +59,19 @@ async def retrieve_hybrid(
     vector_index,
     embedder,
     top_k: int = 4,
+    *,
+    review_mode: bool = False,
 ) -> list[RetrievalHit]:
-    """Dense (Qdrant, role-filtered server-side) + sparse (BM25) fused via RRF."""
+    """Dense + sparse retrieval with the same serve/review visibility policy."""
     dense = await vector_index.search(question, embedder, role, limit=top_k * 3)
     dense_ids = [knowledge_id for knowledge_id, _score in dense]
-    sparse = retrieve(catalog, question, role, top_k=top_k * 3)
+    sparse = retrieve(
+        catalog,
+        question,
+        role,
+        top_k=top_k * 3,
+        review_mode=review_mode,
+    )
     sparse_ids = [hit.item.id for hit in sparse]
     fused = reciprocal_rank_fusion([dense_ids, sparse_ids])
     hits = []
@@ -66,6 +80,8 @@ async def retrieve_hybrid(
             item = catalog.get(knowledge_id)
         except KeyError:
             continue  # stale index entry
+        if not role_allows(role, item, include_unpublished=review_mode):
+            continue
         hits.append(RetrievalHit(item=item, score=score))
         if len(hits) >= top_k:
             break
