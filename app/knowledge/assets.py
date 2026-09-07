@@ -1,10 +1,25 @@
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import yaml
 
 from app.knowledge.models import KnowledgeItem, SourceBinding
+
+
+_catalog_cache: dict[str, tuple[tuple[tuple[str, int, int], ...], "KnowledgeCatalog", float]] = {}
+_CATALOG_TTL_SECONDS = 2.0
+
+
+def _directory_fingerprint(root: Path) -> tuple[tuple[str, int, int], ...]:
+    files = sorted(
+        path for path in root.rglob("*.md") if path.name != "README.md"
+    )
+    return tuple(
+        (str(path.relative_to(root)), path.stat().st_mtime_ns, path.stat().st_size)
+        for path in files
+    )
 
 
 class KnowledgeCatalog:
@@ -15,9 +30,28 @@ class KnowledgeCatalog:
 
     @classmethod
     def from_directory(cls, root: str | Path) -> "KnowledgeCatalog":
+        """Load with a process-level cache invalidated by file mtime/size.
+
+        The knowledge directory is the source of truth; this cache only avoids
+        re-parsing every Markdown file on every request when nothing changed."""
         root_path = Path(root)
-        items = [load_knowledge_file(path) for path in sorted(root_path.rglob("*.md")) if path.name != "README.md"]
-        return cls(items)
+        key = str(root_path)
+        cached = _catalog_cache.get(key)
+        now = time.monotonic()
+        if cached is not None and now - cached[2] < _CATALOG_TTL_SECONDS:
+            return cached[1]
+        fingerprint = _directory_fingerprint(root_path)
+        if cached is not None and cached[0] == fingerprint:
+            _catalog_cache[key] = (fingerprint, cached[1], now)
+            return cached[1]
+        items = [
+            load_knowledge_file(path)
+            for path in sorted(root_path.rglob("*.md"))
+            if path.name != "README.md"
+        ]
+        catalog = cls(items)
+        _catalog_cache[key] = (fingerprint, catalog, now)
+        return catalog
 
     def get(self, knowledge_id: str) -> KnowledgeItem:
         try:

@@ -36,7 +36,7 @@ class OpenAIBehaviorRuleExtractor:
             if self._reasoning_effort
             else None,
             instructions=(
-                "Convert the supplied L1 engineering facts into structured BehaviorRule candidates. "
+                "Convert the supplied L1 engineering facts into structured BehaviorRule candidates. Write every title and free-text statement in Simplified Chinese (简体中文), keeping code identifiers, error ids and quoted literals verbatim in English. "
                 "The L1 facts are the only semantic evidence. Do not invent product intent, actors, "
                 "conditions, exceptions, ordering, state changes, or side effects that are not directly "
                 "entailed by cited facts. Every rule must cite one or more supplied L1 IDs in "

@@ -173,7 +173,7 @@ class OpenAIEngineeringFactExtractor:
             )
 
         instructions = (
-            "You extract L1 engineering facts from source code. "
+            "You extract L1 engineering facts from source code. Write every title and free-text statement in Simplified Chinese (简体中文), keeping code identifiers, error ids and quoted literals verbatim in English. "
             "Return only facts explicitly supported by the supplied code. "
             "Do not infer product intent, user expectations, or undocumented behavior. "
             "Each fact must be independently useful, concise, and non-duplicative. "
@@ -345,7 +345,7 @@ class OpenAIEngineeringRuleExtractor:
         response = await self._client.responses.create(
             model=self._model,
             instructions=(
-                "You synthesize L2 engineering rules from supplied L1 engineering facts. "
+                "You synthesize L2 engineering rules from supplied L1 engineering facts. Write every title and free-text statement in Simplified Chinese (简体中文), keeping code identifiers, error ids and quoted literals verbatim in English. "
                 "Rules are developer-facing technical/domain rules, not product intent or user documentation. "
                 "Every derived_from id must be one of the supplied L1 IDs. "
                 "Each key must match ^[a-z0-9_]+$: ASCII lowercase letters, digits, "
@@ -539,7 +539,7 @@ class OpenAIProductLogicExtractor:
             model=self._model,
             reasoning={"effort": self._reasoning_effort} if self._reasoning_effort else None,
             instructions=(
-                "Translate supplied L2 engineering rules into concise L3 product behavior "
+                "Translate supplied L2 engineering rules into concise L3 product behavior. Write every title and free-text statement in Simplified Chinese (简体中文), keeping code identifiers, error ids and quoted literals verbatim in English. "
                 "for an open-source code-derived knowledge base. Group related rules into "
                 "user-recognizable capabilities. Do not invent intent, UI, timing, guarantees, "
                 "or behavior absent from the rules. Preserve conditional scope, actor identity, "
