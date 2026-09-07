@@ -10,8 +10,23 @@
 - 路线状态：`in_progress`
 - 当前样板：`mattermost/mattermost`
 - 当前业务域：完整 `Channel`
-- 当前语义链：`Code → L1 → BehaviorRule → L2/L3/L4`
-- 当前目标：先建立成熟产品第一版高质量存量知识库，增量维护不是主线。
+- 当前目标：把第一版 Channel 基线治理成真正可 QA、可逐 Feature 发布的知识库。
+
+当前语义关系：
+
+```text
+Code
+ ↓
+L1 Engineering Facts (N)
+ ↓
+BehaviorRule (1..N)
+ ├─ L2 Engineering View
+ └─ L3 Product View
+
+BehaviorRule (N) ↔ L4 User Intent (N)
+```
+
+L4 不再是每条 Rule 的机械投影；各层数量不需要相等。
 
 当前 Channel 域：
 
@@ -24,279 +39,162 @@ Channel
 └─ Archive / Restore
 ```
 
-当前已完成：
+### 当前已完成
 
 - BehaviorRule 结构化语义核心；
 - `L1 → BehaviorRule` OpenAI-compatible Structured Output extractor；
-- `BehaviorRule → L2/L3/L4` 三角色视图；
 - BehaviorRule scope pipeline；
 - 五个 Channel Feature scope；
-- Channel domain manifest；
-- `scripts/compile_domain.py` 域级编译入口；
-- 域级 coverage 汇总；
+- Channel domain manifest 与 `scripts/compile_domain.py`；
 - SourceBinding 主证据收口为 `repo + file + symbol`；
-- Channel scope 不再依赖固定行号 range；
-- CI 已验证新 pipeline 和 Channel domain 配置。
+- 第一版完整 Channel 主域源码语义核查；
+- 第一版 Channel Coverage：20 个核心 L1、20 个初始 BehaviorRule 及对应角色知识；
+- 已记录 ABAC membership policy、Join Request、Permanent Delete、Shared Channel remote sync 等明确 Knowledge Gap；
+- 已发现并纠正一次错误的“82 个 review 资产整批 Published”；新 Channel 基线恢复为 `review`；
+- 正常 Serve 与 Review 模式分离：正常检索只消费 Published；
+- BehaviorRule 自动投影改为 L2/L3，不再强制生成 L4；
+- L4 支持 `behavior_rule_ids`，可以组合多个 Rule；
+- Membership `add_permission_split` 已从 1 条粗 Rule 拆成 4 条原子 Rule，并由其中 2 条共同支撑 1 条用户 FAQ；
+- 已开始清理旧 Creation 正文中的发布日期/审核备注和错误重复知识。
 
-当前未完成：
+### 当前未完成
 
-1. 在真实 Mattermost checkout + 模型凭据环境完整运行五个 Channel Feature；
-2. 审核完整 L1 / BehaviorRule / L2/L3/L4 的语义质量；
-3. 形成第一版真实 Channel Knowledge Coverage；
-4. 发布通过审核的知识到 canonical Markdown / Qdrant；
-5. 用代表性真实问题执行 QA 验收；
-6. 将 QA Knowledge Gap 转换为下一批知识构建优先级。
+1. 对剩余 Channel BehaviorRule 做原子性审核，确认 Rule 本身包含 L2/L3 所需的关键权限、条件和结果；
+2. 完成旧 Creation 与新基线的迁移：真正重复或冲突的资产退出正常 Serve，有独立用户意图价值的 L4 保留；
+3. 将代表性 Channel 问题做成真实 QA regression set；
+4. 对五个 Feature 执行真实 QA 验收；
+5. 按 Feature 逐批 `review → published`，禁止再次整批无 QA 发布；
+6. 将 QA Knowledge Gap 转换为下一批知识构建优先级；
+7. 需要产品运行环境时再同步 Qdrant，不把数据库接入作为当前知识治理前置条件。
 
 ### 下一验收项
 
-直接运行完整 Channel 域：
+不是继续扩框架，也不是再次跑出一批数量整齐的 L1/L2/L3/L4。
 
-```bash
-python scripts/compile_domain.py \
-  /path/to/mattermost \
-  config/knowledge_domains/mattermost-channel.json \
-  --output-dir .scratch/channel-domain \
-  --summary .scratch/channel-domain-summary.json
+下一验收项是：
+
+```text
+Channel Rule Audit
+↓
+去掉过粗 Rule / 补齐原子 Rule
+↓
+User Intent L4 整理
+↓
+15+ 代表性 QA
+↓
+逐 Feature Publish
 ```
 
-验收重点不是“模型有没有成功返回 JSON”，而是：
+验收重点：
 
-- L1 是否覆盖真实业务行为；
-- BehaviorRule 是否正确保存 actor / condition / allow-deny / state / side effect / exception；
-- L2/L3/L4 是否仍表达同一条规则；
-- unsupported fact 是否为 0 或被明确剔除；
-- 是否可以形成足够回答真实 Channel 问题的知识覆盖。
+- Rule 是否能独立表达 actor / condition / permission / allow-deny / state / side effect / exception；
+- L2/L3 是否只依赖 Rule 就能重建核心语义；
+- L4 是否围绕真实用户问题，而不是为数量对齐而生成；
+- 一个 L4 引用多个 Rule 时，答案是否确实由这些 Rule 共同支撑；
+- 正常 Serve 是否完全隔离 Draft/Review/Outdated；
+- 同一用户意图是否存在新旧 Published 重复占据 top-k；
+- QA 错答是否能回溯到具体 Rule 或缺失源码范围。
 
-自动 Repository Graph / 全仓调用图不再是当前步骤的前置条件。只有当手工或半自动 scope 维护成为真实瓶颈时，再增加入口发现自动化。
+自动 Repository Graph / 全仓调用图仍不作为当前步骤的前置条件。
 
 ---
 
 ## Phase 0 — Bootstrap (`completed`)
 
-已完成：
-
-- FastAPI；
-- Pydantic Knowledge Schema；
-- LangGraph workflow skeleton；
-- Tree-sitter Python / Go parser；
-- PostgreSQL schema；
-- Qdrant client；
-- Knowledge asset directory；
-- tests / CI。
+已完成：FastAPI、Pydantic Knowledge Schema、LangGraph workflow skeleton、Tree-sitter Python/Go parser、PostgreSQL schema、Qdrant client、Knowledge asset directory、tests/CI。
 
 ## Phase 1 — 单模块纵向验证 (`completed`)
 
-以 Mattermost `Channel Creation` 为固定样本，验证：
+以 Mattermost `Channel Creation` 为固定样本，建立了代码解析、SourceBinding、Knowledge Catalog、lineage、角色消费边界和早期人工知识资产。
 
-```text
-Code
-→ L1
-→ L2
-→ L3
-→ L4
-→ lineage
-→ role view
-```
+历史计划：`docs/plans/archive/mattermost-channel-creation.md`。
 
-历史目标已完成，相关计划归档于：
-
-- `docs/plans/archive/mattermost-channel-creation.md`
-
-该阶段建立了代码解析、SourceBinding、Knowledge Catalog、lineage、角色消费边界和早期人工知识资产。
+该阶段使用的连续 `L1 → L2 → L3 → L4` 模型已被当前 BehaviorRule 架构取代，不再作为新知识生产方式。
 
 ## Phase 2 — 检索与问答 (`completed`)
 
-已完成：
+已完成 dense embedding、local BM25/sparse、Qdrant hybrid retrieval、role filter、LLM reranker、grounded QA、query analytics、Knowledge Gap、Qdrant sync。
 
-- dense embedding；
-- local BM25 / sparse；
-- Qdrant hybrid retrieval；
-- role filter；
-- LLM reranker；
-- grounded QA；
-- query analytics；
-- Knowledge Gap；
-- Qdrant sync。
+历史记录：`docs/plans/archive/phase2-retrieval-qa.md`。
 
-历史实施记录：
-
-- `docs/plans/archive/phase2-retrieval-qa.md`
-
-当前原则：问答系统已经足够服务知识构建验证，不继续把检索基础设施当主线。
+当前原则：问答基础设施已经足够服务知识质量验证，不继续把检索基础设施当主线。
 
 ## Phase 3 — 增量知识维护基础 (`completed`)
 
-已完成：
+已完成 GitHub push/change intake、changed symbol detection、SourceBinding 影响定位、增量重生成、review/outdated 传播、publish 与 Qdrant 增量刷新。
 
-- GitHub push/change intake；
-- changed symbol detection；
-- SourceBinding 影响定位；
-- L1/L2 增量重生成；
-- L3 review routing；
-- L4 outdated 传播；
-- publish dry-run / approve；
-- Qdrant 增量刷新。
+历史记录：`docs/plans/archive/phase3-incremental-compile.md`。
 
-历史实施记录：
-
-- `docs/plans/archive/phase3-incremental-compile.md`
-
-当前决策：这些能力保留，但冻结为次要维护基础设施。成熟产品变化少，不再围绕 commit、行号、Webhook 继续扩架构。
+当前决策：这些能力保留，但冻结为次要维护基础设施。成熟产品首次存量建库优先。
 
 ## Phase 4 — 成熟产品规模化知识构建 (`in_progress`)
 
-当前实施计划：
+### 4.1 Batch Knowledge Compiler (`completed`)
 
-- `docs/plans/mattermost-scale-knowledge-bootstrap.md`
+Repository Inventory、多文件/多 symbol Feature scope、Code → L1、preview、canonical publish 接口兼容。
 
-### 4.1 已完成：Batch Knowledge Compiler
+### 4.2 BehaviorRule 语义核心 (`completed`)
 
-- Repository Inventory；
-- 多文件、多 symbol Feature scope；
-- Code → L1；
-- preview；
-- canonical publish 接口兼容。
-
-### 4.2 已完成：BehaviorRule 语义核心
-
-旧问题：
+核心原则：
 
 ```text
-L1文本
-→ L2文本
-→ L3文本
-→ L4文本
+多个 L1 可以支撑一个 Rule
+一个 L1 可以拆出多个 Rule
+Rule → L2/L3
+Rule ↔ L4 为多对多
 ```
 
-会在多轮总结中产生：
+BehaviorRule 必须自己保存核心语义，不能依赖 L2/L3 再从 L1 补回来。
 
-- 条件反转；
-- actor 扩大/缩小；
-- allow/deny 错误；
-- 副作用遗漏；
-- unsupported ordering。
+### 4.3 完整 Channel 域结构 (`completed`)
 
-新链路：
+Creation、Membership、Permission、Update/Privacy、Archive/Restore 五个 Feature scope、domain manifest 和域级编译入口已经齐全。
 
-```text
-Code
- ↓
-L1 Engineering Facts
- ↓
-BehaviorRule
- ├─ L2 Engineering View
- ├─ L3 Product View
- └─ L4 User View
-```
+### 4.4 Channel 第一版知识基线 (`completed`)
 
-三种角色视图共享同一结构化规则。
+五个 Feature 已完成第一版真实源码核查、L1/BehaviorRule/L2/L3/L4 基线和 Coverage 报告。
 
-### 4.3 已完成：完整 Channel 域编译结构
+这一步的完成只代表“第一版知识已经存在”，不代表全部可以 Published。
 
-Channel 五个 Feature scope 已齐：
+### 4.5 Channel 知识治理与 QA (`in_progress`)
 
-```text
-Creation
-Membership
-Permission
-Update / Privacy
-Archive / Restore
-```
+当前工作：
 
-域级 manifest：
+- 撤回未经 QA 的批量发布；
+- Rule 原子化；
+- L4 用户意图化；
+- 新旧 Creation 迁移；
+- Serve/Review 隔离；
+- QA regression；
+- 逐 Feature 发布。
 
-```text
-config/knowledge_domains/mattermost-channel.json
-```
+### 4.6 QA Gap 驱动扩库 (`pending`)
 
-域级编译：
-
-```text
-scripts/compile_domain.py
-```
-
-### 4.4 当前进行：真实 Channel 域知识生成
-
-下一步是真实模型运行与语义审核，而不是继续设计基础框架。
-
-目标产物：
-
-```text
-Channel Domain
-├─ L1 facts
-├─ BehaviorRules
-├─ L2 engineering views
-├─ L3 product views
-├─ L4 user views
-└─ coverage summary
-```
-
-所有生成内容默认是 `draft`，通过语义审核后才能进入正式知识库。
-
-### 4.5 后续：QA Gap 驱动扩库
-
-Channel 第一版知识发布后，用真实问题测试：
-
-```text
-QA
-↓
-answerable / knowledge_gap
-↓
-Gap 对应业务域 / Feature
-↓
-继续补源码范围和知识
-```
-
-然后再扩展其他 IM 主域，例如：
-
-- Team；
-- User / Account；
-- Post / Message；
-- Permission / Roles；
-- Notification；
-- Search；
-- File / Attachment；
-- Call / Meeting（如果目标产品存在）。
-
-扩展顺序由真实 Knowledge Gap 和业务价值决定，不按代码目录机械推进。
+Channel 基线通过 QA 后，再根据真实 Knowledge Gap 决定补 Channel 子能力或进入 Team、User/Account、Post/Message、Permission/Roles、Notification、Search、File/Attachment、Call/Meeting 等其他 IM 主域。
 
 ## Phase 5 — 企业化 (`pending`)
 
-在知识生产链被真实验证后，再考虑：
-
-- SSO / IAM；
-- Department / Project Permission；
-- Review Console；
-- Knowledge Coverage UI；
-- Evidence Trace UI；
-- Monitoring / Cost / Latency；
-- 灰度与回滚；
-- 企业内部代码平台适配。
+知识生产链被真实验证后，再考虑 SSO/IAM、部门/项目权限、Review Console、Coverage UI、Evidence Trace UI、监控、灰度、企业内部代码平台适配等。
 
 ## 当前设计决策
 
 ### 2026-09-06 — Mature Product First
-
 成熟产品首次存量建库是当前主要矛盾，增量更新降级为次要能力。
 
 ### 2026-09-06 — SourceBinding 只承担可追溯
+核心证据为 `repo + file + symbol`；commit/revision/line 是可选辅助信息。
 
-核心证据：
+### 2026-09-06 — BehaviorRule 承载跨角色核心语义
+L2/L3 从 Rule 投影，不依赖连续自然语言摘要传递核心条件。
 
-```text
-repo + file + symbol
-```
+### 2026-09-07 — L4 改为 User Intent Knowledge
+L4 不再强制由每个 Rule 一一生成；允许 `Rule 0..N ↔ L4 0..N`。
 
-commit/revision/line 是可选辅助信息，不参与知识身份和首次建库门禁。
+### 2026-09-07 — Serve 与 Review 分离
+正常问答只消费 Published。Draft/Review/Outdated 只有显式 Review 模式才能进入候选。
 
-### 2026-09-06 — BehaviorRule 承载跨角色语义
-
-L2/L3/L4 从同一结构化规则生成，不再依赖连续自然语言摘要保存核心业务条件。
-
-### 2026-09-06 — 生成与发布分离
-
-Structured Output 合法或模型成功返回不等于 Published。BehaviorRule pipeline 默认生成 Draft。
+### 2026-09-07 — QA 前不得批量发布
+结构合法和 Semantic Review 均不等于正式发布；必须经过代表性 QA，再按 Feature 发布。
 
 ### 2026-09-06 — 不把 Repository Graph 当当前前置条件
-
-已有明确 Feature scope 时直接建库。只有 scope 发现成本成为真实瓶颈，才投入入口发现/调用关系自动化。
+只有 scope 发现成本成为真实瓶颈时，才投入入口发现/调用关系自动化。
