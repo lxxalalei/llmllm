@@ -24,17 +24,24 @@ def test_retrieve_user_only_returns_published_l3_l4() -> None:
         assert hit.item.status.value == "published"
 
 
-def test_retrieve_product_can_surface_l3_review_assets() -> None:
+def test_retrieve_product_normal_serve_uses_published_product_knowledge() -> None:
     catalog = KnowledgeCatalog.from_directory(Path("knowledge"))
     hits = retrieve(catalog, "团队达到频道上限后还能创建频道吗", UserRole.PRODUCT, top_k=5)
     layers = {hit.item.layer for hit in hits}
     assert KnowledgeLayer.L3_PRODUCT_LOGIC in layers
     assert KnowledgeLayer.L1_ENGINEERING_FACT not in layers
+    assert all(hit.item.status.value == "published" for hit in hits)
 
 
-def test_retrieve_developer_can_surface_l1_with_code_binding() -> None:
+def test_retrieve_developer_review_mode_can_surface_l1_with_code_binding() -> None:
     catalog = KnowledgeCatalog.from_directory(Path("knowledge"))
-    hits = retrieve(catalog, "MaxChannelsPerTeam 限制在哪里生效", UserRole.DEVELOPER, top_k=5)
+    hits = retrieve(
+        catalog,
+        "MaxChannelsPerTeam 限制在哪里生效",
+        UserRole.DEVELOPER,
+        top_k=5,
+        review_mode=True,
+    )
     assert hits[0].item.id == "eng.mattermost.channel.create.team_limit"
 
 
@@ -77,7 +84,6 @@ def test_qa_endpoint_hardens_citations_and_reports_gap(monkeypatch) -> None:
     payload = response.json()
     assert payload["answer"] == "因为团队频道数量达到上限。"
     assert payload["knowledge_gap"] is False
-    # fabricated citation is stripped; real one is resolved to asset metadata
     assert [cite["id"] for cite in payload["cites"]] == ["faq.mattermost.channel.create.limit"]
     assert payload["cites"][0]["status"] == "published"
     assert "faq.mattermost.channel.create.limit" in payload["retrieved"]
@@ -116,4 +122,3 @@ def test_parse_answer_text_reports_corrupt_output() -> None:
 
     with pytest.raises(ValueError, match="non-JSON"):
         _parse_answer_text("oops this is not json")
-

@@ -7,9 +7,11 @@ status: review
 version: 2
 derived_from:
   - product.mattermost.channel.create.team_channel
-  - product.mattermost.channel.creation.create_permission_gate
+  - product.mattermost.channel.creation.create_open_permission
+  - product.mattermost.channel.creation.create_private_permission
 behavior_rule_ids:
-  - rule.mattermost.channel.creation.create_permission_gate
+  - rule.mattermost.channel.creation.create_open_permission
+  - rule.mattermost.channel.creation.create_private_permission
 visible_roles: [user, product, test, developer, admin]
 ---
 

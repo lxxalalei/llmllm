@@ -6,7 +6,7 @@ feature: channel_creation
 status: draft
 version: 1
 derived_from:
-  - eng.mattermost.channel.create.creator_membership
+  - eng.mattermost.channel.creation.creator_membership.fact
   - eng.mattermost.channel.create.join_history
   - eng.mattermost.channel.create.default_category
   - eng.mattermost.channel.create.join_message

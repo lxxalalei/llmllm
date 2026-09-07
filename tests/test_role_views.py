@@ -47,7 +47,7 @@ def test_product_and_test_use_published_assets_in_normal_serve(catalog) -> None:
     assert not role_allows(UserRole.PRODUCT, _item(catalog, MANAGED_L3))
     assert not role_allows(UserRole.PRODUCT, _item(catalog, STANDARD_FLOW_L2))
     assert not role_allows(UserRole.PRODUCT, _item(catalog, TEAM_LIMIT_L1))
-    assert role_allows(UserRole.TEST, _item(catalog, TEAM_LIMIT_L1))
+    assert not role_allows(UserRole.TEST, _item(catalog, TEAM_LIMIT_L1))
 
 
 def test_review_mode_explicitly_allows_unpublished_role_assets(catalog) -> None:
@@ -66,10 +66,20 @@ def test_review_mode_explicitly_allows_unpublished_role_assets(catalog) -> None:
         _item(catalog, TEAM_LIMIT_L1),
         include_unpublished=True,
     )
+    assert role_allows(
+        UserRole.TEST,
+        _item(catalog, TEAM_LIMIT_L1),
+        include_unpublished=True,
+    )
 
 
 def test_developer_serve_and_review_boundaries(catalog) -> None:
-    assert role_allows(UserRole.DEVELOPER, _item(catalog, TEAM_LIMIT_L1))
+    assert not role_allows(UserRole.DEVELOPER, _item(catalog, TEAM_LIMIT_L1))
+    assert role_allows(
+        UserRole.DEVELOPER,
+        _item(catalog, TEAM_LIMIT_L1),
+        include_unpublished=True,
+    )
     assert not role_allows(UserRole.DEVELOPER, _item(catalog, STANDARD_FLOW_L2))
     assert role_allows(
         UserRole.DEVELOPER,
@@ -92,9 +102,10 @@ def test_drill_respects_normal_serve_status(catalog) -> None:
     assert drill_down(catalog, faq, UserRole.USER) == []
 
 
-def test_developer_locates_pinned_code_via_l1(catalog) -> None:
+def test_developer_locates_pinned_code_via_review_view(catalog) -> None:
     l1 = _item(catalog, TEAM_LIMIT_L1)
-    assert role_allows(UserRole.DEVELOPER, l1)
+    assert not role_allows(UserRole.DEVELOPER, l1)
+    assert role_allows(UserRole.DEVELOPER, l1, include_unpublished=True)
     assert len(l1.sources) == 1
     source = l1.sources[0]
     assert source.repo == "mattermost/mattermost"
