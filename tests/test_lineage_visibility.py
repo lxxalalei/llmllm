@@ -22,11 +22,21 @@ def test_user_lineage_does_not_leak_hidden_engineering_layers_or_sources() -> No
     assert payload["sources"] == []
 
 
-def test_developer_lineage_keeps_engineering_layers_and_code_sources() -> None:
+def test_developer_normal_serve_lineage_excludes_unpublished_engineering_evidence() -> None:
     response = client.get(
         f"/api/v1/knowledge/{LIMIT_FAQ}/lineage",
         params={"role": "developer"},
     )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["lineage"]
+    assert all(item["status"] == "published" for item in payload["lineage"])
+    assert all(item["layer"] not in ("L1", "L2") for item in payload["lineage"])
+    assert payload["sources"] == []
+
+
+def test_management_lineage_can_still_trace_to_engineering_sources() -> None:
+    response = client.get(f"/api/v1/knowledge/{LIMIT_FAQ}/lineage")
     assert response.status_code == 200
     payload = response.json()
     assert any(item["layer"] == "L1" for item in payload["lineage"])
