@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.creation.standard_create_required_fields
+title: 普通频道创建必须提供 TeamId 和 DisplayName
+domain: mattermost.channel
+capability: creation
+actor: authenticated_user
+action: create_standard_channel
+resource: channel_request
+conditions:
+  all:
+  - field: request.team_id
+    operator: present
+    value: true
+  - field: request.display_name
+    operator: non_empty
+    value: true
+  any: []
+decision: pass_required_field_validation
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.creation.create_permission_gate.fact

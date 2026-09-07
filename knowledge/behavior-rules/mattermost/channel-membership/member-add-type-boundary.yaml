@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.membership.member_add_type_boundary
+title: 普通成员添加只接受 Open、Private 和 Space
+domain: mattermost.channel
+capability: membership
+actor: membership_service
+action: add_user_to_channel
+resource: channel
+conditions:
+  all:
+  - field: channel.type
+    operator: not_in
+    value:
+    - open
+    - private
+    - space
+  any: []
+decision: reject_member_add
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_integrity_constraints.fact

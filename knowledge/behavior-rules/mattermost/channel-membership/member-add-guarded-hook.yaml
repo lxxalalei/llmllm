@@ -1,0 +1,29 @@
+id: rule.mattermost.channel.membership.member_add_guarded_hook
+title: 非 Space 成员保存前必须经过 ChannelMemberWillBeAdded guard
+domain: mattermost.channel
+capability: membership
+actor: membership_service
+action: persist_channel_member
+resource: channel_member
+conditions:
+  all:
+  - field: channel.type
+    operator: not_equals
+    value: space
+  any: []
+decision: require_channel_member_will_be_added_guard
+state_changes: []
+side_effects:
+- kind: plugin_guard
+  target: ChannelMemberWillBeAdded
+  detail: before membership persistence
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: skip standard channel-member guarded hook
+source_fact_ids:
+- eng.mattermost.channel.membership.add_integrity_constraints.fact

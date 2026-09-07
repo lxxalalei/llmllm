@@ -6,18 +6,13 @@ feature: channel_membership
 status: review
 version: 1
 derived_from:
-- product.mattermost.channel.membership.add_integrity_constraints
-behavior_rule_id: rule.mattermost.channel.membership.add_integrity_constraints
-tags:
-- mattermost
-- channel
-- channel_membership
-visible_roles:
-- user
-- product
-- test
-- developer
-- admin
+- product.mattermost.channel.membership.team_member_integrity
+- product.mattermost.channel.membership.group_constrained_membership
+behavior_rule_ids:
+- rule.mattermost.channel.membership.team_member_integrity
+- rule.mattermost.channel.membership.group_constrained_membership
+tags: [mattermost, channel, channel_membership]
+visible_roles: [user, product, test, developer, admin]
 ---
 
 # 为什么管理员有权限加人，系统仍然提示这个用户不能加入？

@@ -1,0 +1,25 @@
+id: rule.mattermost.channel.creation.create_open_permission
+title: 创建公开频道需要 create_public_channel
+domain: mattermost.channel
+capability: creation
+actor: authenticated_user
+action: create_open_channel
+resource: channel
+conditions:
+  all:
+  - field: session.authenticated
+    operator: equals
+    value: true
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: requester.permission.create_public_channel
+    operator: equals
+    value: true
+  any: []
+decision: allow_standard_channel_creation
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.creation.create_permission_gate.fact

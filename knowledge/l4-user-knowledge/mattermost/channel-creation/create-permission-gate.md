@@ -6,18 +6,15 @@ feature: channel_creation
 status: review
 version: 1
 derived_from:
-- product.mattermost.channel.creation.create_permission_gate
-behavior_rule_id: rule.mattermost.channel.creation.create_permission_gate
-tags:
-- mattermost
-- channel
-- channel_creation
-visible_roles:
-- user
-- product
-- test
-- developer
-- admin
+- product.mattermost.channel.creation.create_open_permission
+- product.mattermost.channel.creation.create_private_permission
+- product.mattermost.channel.creation.standard_create_type_boundary
+behavior_rule_ids:
+- rule.mattermost.channel.creation.create_open_permission
+- rule.mattermost.channel.creation.create_private_permission
+- rule.mattermost.channel.creation.standard_create_type_boundary
+tags: [mattermost, channel, channel_creation]
+visible_roles: [user, product, test, developer, admin]
 ---
 
 # 为什么有的人能创建公开频道却不能创建私有频道？
