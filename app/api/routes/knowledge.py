@@ -4,13 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.knowledge import KnowledgeCatalog
-from app.knowledge.models import (
-    KnowledgeItem,
-    KnowledgeLayer,
-    KnowledgeStatus,
-    SourceBinding,
-    UserRole,
-)
+from app.knowledge.models import KnowledgeItem, SourceBinding, UserRole
 from app.knowledge.views import drill_down, role_allows, visible_items
 
 router = APIRouter()
@@ -45,28 +39,6 @@ async def list_knowledge(role: UserRole | None = None) -> list[KnowledgeItem]:
     if role is not None:
         items = visible_items(items, role)
     return items
-
-
-@router.get("/example", response_model=KnowledgeItem)
-async def example_knowledge_item() -> KnowledgeItem:
-    return KnowledgeItem(
-        id="product.conversation.work_order.auto_archive",
-        title="工单会话自动归档",
-        layer=KnowledgeLayer.L3_PRODUCT_LOGIC,
-        module="conversation",
-        feature="work_order",
-        content="已结束且长期无活动的工单会话会自动进入归档状态。",
-        status=KnowledgeStatus.PUBLISHED,
-        derived_from=["eng.conversation.work_order.archive"],
-        sources=[
-            SourceBinding(
-                repo="example/mars-server",
-                file="src/conversation/archive_service.py",
-                symbol="archive_if_inactive",
-            )
-        ],
-        visible_roles=[UserRole.USER, UserRole.PRODUCT, UserRole.TEST, UserRole.DEVELOPER],
-    )
 
 
 @router.get("/{knowledge_id}/drill", response_model=list[KnowledgeItem])

@@ -83,6 +83,32 @@ class QAResponder(Protocol):
         ...
 
 
+def _parse_answer_text(text: str) -> dict[str, object]:
+    """Parse the model's structured answer, tolerating ```json fences or
+    surrounding prose that some endpoints occasionally add. Failures raise a
+    ValueError carrying the original text (first 300 chars) for diagnosis."""
+    candidate = text.strip()
+    lines = candidate.splitlines()
+    if lines and lines[0].startswith("```"):
+        lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        candidate = "\n".join(lines).strip()
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        start = candidate.find("{")
+        end = candidate.rfind("}")
+        if start != -1 and end > start:
+            try:
+                return json.loads(candidate[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+        raise ValueError(
+            f"model returned non-JSON answer: {candidate[:300]!r}"
+        ) from None
+
+
 def render_context(hits: list[RetrievalHit]) -> str:
     blocks = []
     for hit in hits:
@@ -149,7 +175,7 @@ class OpenAIQAResponder:
         )
         if not response.output_text:
             raise ValueError("QA model returned no structured answer")
-        return json.loads(response.output_text)
+        return _parse_answer_text(response.output_text)
 
     async def close(self) -> None:
         await self._client.close()

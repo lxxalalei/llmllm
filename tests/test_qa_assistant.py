@@ -98,3 +98,22 @@ def test_qa_endpoint_gap_flag_passthrough(monkeypatch) -> None:
 def test_qa_rejects_invalid_role_and_short_question() -> None:
     assert client.post("/api/v1/qa", json={"question": "x", "role": "user"}).status_code == 422
     assert client.post("/api/v1/qa", json={"question": "为什么", "role": "bogus"}).status_code == 422
+
+
+def test_parse_answer_text_tolerates_fences_and_prose() -> None:
+    from app.knowledge.qa import _parse_answer_text
+
+    plain = _parse_answer_text('{"answer": "a", "cites": [], "knowledge_gap": false}')
+    assert plain["answer"] == "a"
+    fenced = _parse_answer_text('```json\n{"answer": "b", "cites": [], "knowledge_gap": false}\n```')
+    assert fenced["answer"] == "b"
+    prose = _parse_answer_text('Sure! Here is the answer: {"answer": "c", "cites": [], "knowledge_gap": false} Thanks!')
+    assert prose["answer"] == "c"
+
+
+def test_parse_answer_text_reports_corrupt_output() -> None:
+    from app.knowledge.qa import _parse_answer_text
+
+    with pytest.raises(ValueError, match="non-JSON"):
+        _parse_answer_text("oops this is not json")
+

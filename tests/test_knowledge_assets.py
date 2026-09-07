@@ -20,7 +20,7 @@ def test_mattermost_faq_traces_back_to_code() -> None:
         "eng.mattermost.channel.create.team_limit",
         "eng.mattermost.channel.create.creator_assignment",
         "eng.mattermost.channel.create.creator_membership_rule",
-        "eng.mattermost.channel.create.creator_membership",
+        "eng.mattermost.channel.creation.creator_membership.fact",
         "eng.mattermost.channel.create.join_history",
         "eng.mattermost.channel.create.default_category",
         "eng.mattermost.channel.create.join_message",
