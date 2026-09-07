@@ -10,34 +10,48 @@ LAYER_ORDER = {
 }
 
 
-def role_allows(role: UserRole, item: KnowledgeItem) -> bool:
+def role_allows(
+    role: UserRole,
+    item: KnowledgeItem,
+    *,
+    include_unpublished: bool = False,
+) -> bool:
     """Role consumption boundary.
 
-    - USER: only Published L3/L4 and only where the asset grants the user role.
-    - PRODUCT / TEST / DEVELOPER: anything their asset-level visible_roles grant
-      (L2/L3 for product/test including review items; L1/L2 for developers), so
-      review work and code location stay possible. Deprecated handling is a
-      consumption-policy decision for later phases.
+    Normal serve mode only consumes Published assets for every role. Review
+    tooling must opt in with ``include_unpublished=True``; role visibility still
+    applies, but Draft/Review/Outdated assets can then be inspected explicitly.
     """
     if role not in item.visible_roles:
+        return False
+    if not include_unpublished and item.status != KnowledgeStatus.PUBLISHED:
         return False
     if role == UserRole.USER:
         return item.layer in (
             KnowledgeLayer.L3_PRODUCT_LOGIC,
             KnowledgeLayer.L4_USER_KNOWLEDGE,
-        ) and item.status == KnowledgeStatus.PUBLISHED
+        )
     return True
 
 
-def visible_items(items: list[KnowledgeItem], role: UserRole) -> list[KnowledgeItem]:
-    return [item for item in items if role_allows(role, item)]
+def visible_items(
+    items: list[KnowledgeItem],
+    role: UserRole,
+    *,
+    include_unpublished: bool = False,
+) -> list[KnowledgeItem]:
+    return [
+        item
+        for item in items
+        if role_allows(role, item, include_unpublished=include_unpublished)
+    ]
 
 
 def drill_down(catalog, item: KnowledgeItem, role: UserRole | None = None) -> list[KnowledgeItem]:
     """Direct derived_from items on a strictly lower layer.
 
-    role=None is the unfiltered management view; otherwise the role
-    consumption boundary applies.
+    role=None is the unfiltered management/review view; otherwise normal serve
+    visibility applies.
     """
     parents: list[KnowledgeItem] = []
     for parent_id in item.derived_from:
