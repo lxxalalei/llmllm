@@ -102,7 +102,15 @@ def _default_path(root: Path, item: KnowledgeItem) -> Path:
     if not product:
         raise ValueError(f"cannot infer knowledge product directory: {item.id}")
     feature = (item.feature or "general").replace("_", "-")
-    key = item.id.rsplit(".", 1)[-1].replace("_", "-")
+    tail = item.id.rsplit(".", 1)[-1]
+    if item.id.count(".") >= 2 and (
+        (item.layer == KnowledgeLayer.L1_ENGINEERING_FACT and tail == "fact")
+        or (item.layer == KnowledgeLayer.L2_ENGINEERING_RULE and tail == "behavior")
+    ):
+        stem = item.id.rsplit(".", 2)[-2].replace("_", "-")
+        key = f"{stem}-behavior" if tail == "behavior" else stem
+    else:
+        key = tail.replace("_", "-")
     return root / layer_dir / product / feature / f"{key}.md"
 
 

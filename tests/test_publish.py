@@ -196,3 +196,26 @@ def test_publish_writes_auto_generated_upper_layers(tmp_path: Path) -> None:
     assert load_knowledge_file(
         root / "l4-user-knowledge/demo/creation/answer.md"
     ).status == KnowledgeStatus.PUBLISHED
+
+
+def test_default_path_handles_fact_behavior_suffixes(tmp_path) -> None:
+    from app.knowledge.publish import _default_path
+    from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus
+
+    l1 = KnowledgeItem(
+        id="eng.mattermost.channel.creation.creator_membership.fact",
+        title="x", layer=KnowledgeLayer.L1_ENGINEERING_FACT, module="mattermost.channel",
+        feature="channel_creation", content="y", status=KnowledgeStatus.DRAFT,
+    )
+    l2 = KnowledgeItem(
+        id="eng.mattermost.channel.creation.creator_membership.behavior",
+        title="x", layer=KnowledgeLayer.L2_ENGINEERING_RULE, module="mattermost.channel",
+        feature="channel_creation", content="y", status=KnowledgeStatus.DRAFT,
+    )
+    p1 = _default_path(tmp_path, l1)
+    p2 = _default_path(tmp_path, l2)
+    assert p1.name == "creator-membership.md"
+    assert p2.name == "creator-membership-behavior.md"
+    assert "l1-engineering-facts" in str(p1)
+    assert "l2-engineering-rules" in str(p2)
+
