@@ -55,6 +55,8 @@ def _frontmatter(item: KnowledgeItem) -> dict[str, object]:
         metadata["derived_from"] = list(item.derived_from)
     if item.behavior_rule_id:
         metadata["behavior_rule_id"] = item.behavior_rule_id
+    if item.behavior_rule_ids:
+        metadata["behavior_rule_ids"] = list(item.behavior_rule_ids)
     if item.sources:
         metadata["sources"] = [
             {
