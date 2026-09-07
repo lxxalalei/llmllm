@@ -19,7 +19,17 @@ conditions:
     value: true
 decision: allow_restore_after_guard
 state_changes: []
-side_effects: []
-exceptions: []
+side_effects:
+- kind: plugin_guard
+  target: ChannelWillBeRestored
+  detail: non-space before restore; guard unavailable or RPC failure rejects restore
+exceptions:
+- conditions:
+    all:
+    - field: channel.type
+      operator: equals
+      value: space
+    any: []
+  outcome: skip standard ChannelWillBeRestored guarded hook
 source_fact_ids:
 - eng.mattermost.channel.archive_restore.restore_permission_and_guard.fact

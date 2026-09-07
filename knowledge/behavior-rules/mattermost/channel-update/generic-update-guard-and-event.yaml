@@ -17,6 +17,9 @@ conditions:
 decision: persist_after_update_guards
 state_changes: []
 side_effects:
+- kind: plugin_guard
+  target: ChannelWillBeUpdated
+  detail: before persistence; replacement cannot change channel type; guard unavailable or RPC failure rejects update
 - kind: websocket
   target: channel
   detail: channel_updated for non-space
