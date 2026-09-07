@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.membership.open_add_other_permission
+title: 公开频道添加他人要求 manage_public_channel_members
+domain: mattermost.channel
+capability: membership
+actor: requester
+action: add_other_user_to_channel
+resource: open_channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: requester_id
+    operator: not_equals_field
+    value: target_user_id
+  any: []
+decision: require_manage_public_channel_members
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_permission_split.fact

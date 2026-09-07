@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.membership.direct_group_add_rejected
+title: 普通成员添加接口拒绝 Direct 和 Group
+domain: mattermost.channel
+capability: membership
+actor: requester
+action: add_channel_member
+resource: direct_or_group_channel
+conditions:
+  all: []
+  any:
+  - field: channel.type
+    operator: equals
+    value: direct
+  - field: channel.type
+    operator: equals
+    value: group
+decision: reject_member_add_endpoint
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_permission_split.fact

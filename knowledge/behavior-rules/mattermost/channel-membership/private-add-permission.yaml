@@ -1,20 +1,17 @@
-id: rule.mattermost.channel.membership.add_permission_split
-title: 加入自己与添加他人使用不同权限
+id: rule.mattermost.channel.membership.private_add_permission
+title: 私有频道添加成员要求 manage_private_channel_members
 domain: mattermost.channel
 capability: membership
 actor: requester
 action: add_channel_member
-resource: channel
+resource: private_channel
 conditions:
-  all: []
-  any:
-  - field: channel.type
-    operator: equals
-    value: open
+  all:
   - field: channel.type
     operator: equals
     value: private
-decision: require_permission_by_actor_target_and_channel_type
+  any: []
+decision: require_manage_private_channel_members
 state_changes: []
 side_effects: []
 exceptions: []

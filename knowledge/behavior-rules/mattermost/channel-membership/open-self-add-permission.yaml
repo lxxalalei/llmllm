@@ -1,0 +1,22 @@
+id: rule.mattermost.channel.membership.open_self_add_permission
+title: 公开频道自助加入要求 join_public_channels
+domain: mattermost.channel
+capability: membership
+actor: requester
+action: add_self_to_channel
+resource: open_channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: open
+  - field: requester_id
+    operator: equals_field
+    value: target_user_id
+  any: []
+decision: require_join_public_channels
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.membership.add_permission_split.fact
