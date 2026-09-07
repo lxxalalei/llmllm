@@ -3,7 +3,7 @@ id: product.mattermost.channel.membership.add_lifecycle
 layer: L3
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.membership.add_lifecycle.behavior

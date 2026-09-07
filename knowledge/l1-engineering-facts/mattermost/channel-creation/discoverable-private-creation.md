@@ -3,7 +3,7 @@ id: eng.mattermost.channel.creation.discoverable_private_creation.fact
 layer: L1
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost

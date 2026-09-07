@@ -3,7 +3,7 @@ id: product.mattermost.channel.update.generic_update_guard_and_event
 layer: L3
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.update.generic_update_guard_and_event.behavior

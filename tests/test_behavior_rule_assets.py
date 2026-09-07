@@ -25,7 +25,7 @@ def test_mattermost_channel_behavior_rules_are_grounded_and_have_role_views() ->
         for fact_id in rule.source_fact_ids:
             fact = catalog.get(fact_id)
             assert fact.layer == KnowledgeLayer.L1_ENGINEERING_FACT
-            assert fact.status == KnowledgeStatus.REVIEW
+            assert fact.status == KnowledgeStatus.PUBLISHED
             assert fact.sources
             assert all(
                 source.repo == "mattermost/mattermost"
@@ -44,4 +44,4 @@ def test_mattermost_channel_behavior_rules_are_grounded_and_have_role_views() ->
             KnowledgeLayer.L3_PRODUCT_LOGIC,
             KnowledgeLayer.L4_USER_KNOWLEDGE,
         }
-        assert all(item.status == KnowledgeStatus.REVIEW for item in views)
+        assert all(item.status == KnowledgeStatus.PUBLISHED for item in views)

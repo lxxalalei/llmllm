@@ -3,7 +3,7 @@ id: eng.mattermost.channel.update.generic_update_guard_and_event.fact
 layer: L1
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost

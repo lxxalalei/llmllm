@@ -3,7 +3,7 @@ id: eng.mattermost.channel.archive_restore.restore_state_and_event.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_archive_restore
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.archive_restore.restore_state_and_event.fact

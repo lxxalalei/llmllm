@@ -3,7 +3,7 @@ id: eng.mattermost.channel.membership.add_integrity_constraints.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.membership.add_integrity_constraints.fact

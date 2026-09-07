@@ -3,7 +3,7 @@ id: faq.mattermost.channel.creation.creator_membership
 layer: L4
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 derived_from:
 - product.mattermost.channel.creation.creator_membership

@@ -3,7 +3,7 @@ id: eng.mattermost.channel.membership.add_permission_split.fact
 layer: L1
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost
