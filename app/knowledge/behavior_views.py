@@ -9,7 +9,7 @@ from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus,
 class BehaviorRuleViews(BaseModel):
     l2: KnowledgeItem
     l3: KnowledgeItem
-    l4: KnowledgeItem
+    l4: KnowledgeItem | None = None
 
 
 def _display_field(value: str) -> str:
@@ -54,9 +54,7 @@ def _rule_suffix(rule: BehaviorRule) -> str:
 
 
 def _engineering_content(rule: BehaviorRule) -> str:
-    lines = [
-        f"Actor `{rule.actor}` performs `{rule.action}` on `{rule.resource}`.",
-    ]
+    lines = [f"Actor `{rule.actor}` performs `{rule.action}` on `{rule.resource}`."]
     conditions = _conditions_text(rule.conditions)
     if conditions:
         lines.append(f"Conditions: {conditions}.")
@@ -67,9 +65,10 @@ def _engineering_content(rule: BehaviorRule) -> str:
     if rule.side_effects:
         lines.append("Side effects: " + "; ".join(_effect_text(item) for item in rule.side_effects) + ".")
     if rule.exceptions:
-        rendered = []
-        for exception in rule.exceptions:
-            rendered.append(f"{_conditions_text(exception.conditions)} => {exception.outcome}")
+        rendered = [
+            f"{_conditions_text(exception.conditions)} => {exception.outcome}"
+            for exception in rule.exceptions
+        ]
         lines.append("Exceptions: " + "; ".join(rendered) + ".")
     return "\n\n".join(lines)
 
@@ -89,36 +88,20 @@ def _product_content(rule: BehaviorRule) -> str:
     if rule.side_effects:
         lines.append("The system also triggers: " + "; ".join(_effect_text(item) for item in rule.side_effects) + ".")
     if rule.exceptions:
-        rendered = []
-        for exception in rule.exceptions:
-            rendered.append(f"when {_conditions_text(exception.conditions)}, {exception.outcome}")
-        lines.append("Exceptions: " + "; ".join(rendered) + ".")
-    return "\n\n".join(lines)
-
-
-def _user_answer(rule: BehaviorRule) -> str:
-    action = _display_field(rule.action)
-    resource = _display_field(rule.resource)
-    lines = [f"When {action} applies to {resource}, the system follows the rule \"{rule.title}\"."]
-    conditions = _conditions_text(rule.conditions)
-    if conditions:
-        lines.append(f"It applies when {conditions}.")
-    if rule.decision:
-        lines.append(f"The result is {rule.decision.replace('_', ' ')}.")
-    if rule.state_changes:
-        lines.append("Related state changes include: " + "; ".join(_effect_text(item) for item in rule.state_changes) + ".")
-    if rule.side_effects:
-        lines.append("You may also see: " + "; ".join(_effect_text(item) for item in rule.side_effects) + ".")
-    if rule.exceptions:
-        rendered = []
-        for exception in rule.exceptions:
-            rendered.append(f"when {_conditions_text(exception.conditions)}, {exception.outcome}")
+        rendered = [
+            f"when {_conditions_text(exception.conditions)}, {exception.outcome}"
+            for exception in rule.exceptions
+        ]
         lines.append("Exceptions: " + "; ".join(rendered) + ".")
     return "\n\n".join(lines)
 
 
 class BehaviorRuleProjector:
-    """Create three role views from one structured rule without summarizing between layers."""
+    """Create engineering/product views from one structured rule.
+
+    L4 is deliberately excluded. User knowledge is organized by user intent
+    and may reference zero, one, or multiple BehaviorRules.
+    """
 
     def project(self, *, rule: BehaviorRule, module: str, feature: str) -> BehaviorRuleViews:
         suffix = _rule_suffix(rule)
@@ -146,16 +129,4 @@ class BehaviorRuleProjector:
             behavior_rule_id=rule.id,
             visible_roles=[UserRole.PRODUCT, UserRole.TEST, UserRole.DEVELOPER, UserRole.ADMIN],
         )
-        l4 = KnowledgeItem(
-            id=f"faq.{suffix}",
-            title=f"What happens under {rule.title}?",
-            layer=KnowledgeLayer.L4_USER_KNOWLEDGE,
-            module=module,
-            feature=feature,
-            content=_user_answer(rule),
-            status=KnowledgeStatus.DRAFT,
-            derived_from=[l3.id],
-            behavior_rule_id=rule.id,
-            visible_roles=list(UserRole),
-        )
-        return BehaviorRuleViews(l2=l2, l3=l3, l4=l4)
+        return BehaviorRuleViews(l2=l2, l3=l3)
