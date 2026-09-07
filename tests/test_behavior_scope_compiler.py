@@ -48,7 +48,7 @@ class RuleExtractor:
 
 
 @pytest.mark.asyncio
-async def test_behavior_rule_scope_compiles_l1_into_three_views_without_l2_generator(
+async def test_behavior_rule_scope_compiles_l1_into_l2_l3_without_forcing_l4(
     tmp_path: Path,
 ) -> None:
     (tmp_path / "channel.go").write_text(
@@ -82,15 +82,14 @@ async def test_behavior_rule_scope_compiles_l1_into_three_views_without_l2_gener
         "l2": 1,
         "behavior_rules": 1,
         "l3": 1,
-        "l4": 1,
+        "l4": 0,
     }
     rule_id = preview["behavior_rules"][0]["id"]
     assert preview["l2_items"][0]["behavior_rule_id"] == rule_id
     assert preview["l3_items"][0]["behavior_rule_id"] == rule_id
-    assert preview["l4_items"][0]["behavior_rule_id"] == rule_id
+    assert preview["l4_items"] == []
     assert preview["l2_items"][0]["status"] == "draft"
     assert preview["l3_items"][0]["status"] == "draft"
-    assert preview["l4_items"][0]["status"] == "draft"
 
 
 def test_behavior_rule_scope_does_not_allow_auto_publish() -> None:
@@ -128,7 +127,7 @@ def test_domain_summary_reports_feature_and_total_coverage() -> None:
                 "behavior_rules": 4,
                 "l2": 4,
                 "l3": 4,
-                "l4": 4,
+                "l4": 0,
             },
         },
         {
@@ -144,7 +143,7 @@ def test_domain_summary_reports_feature_and_total_coverage() -> None:
                 "behavior_rules": 7,
                 "l2": 7,
                 "l3": 7,
-                "l4": 7,
+                "l4": 0,
             },
         },
     ]
@@ -159,5 +158,5 @@ def test_domain_summary_reports_feature_and_total_coverage() -> None:
         "behavior_rules": 11,
         "l2": 11,
         "l3": 11,
-        "l4": 11,
+        "l4": 0,
     }
