@@ -17,13 +17,27 @@ L1 Engineering Facts
         ↓
 BehaviorRule（结构化业务事实）
         ├─ L2 Engineering View
-        ├─ L3 Product View
-        └─ L4 User View
+        └─ L3 Product View
+
+BehaviorRule(s)
+        ↕
+L4 User Intent Knowledge
         ↓
 Canonical Knowledge / Index
 ```
 
-L1 负责记录代码实际行为；BehaviorRule 用于保存不应在文本改写中丢失的条件、决策、状态变化、副作用和例外；L2/L3/L4 是面向不同角色的知识视图，不再把连续文本摘要本身当成核心事实传递机制。
+L1 负责记录代码实际行为；BehaviorRule 用于保存不应在文本改写中丢失的条件、决策、状态变化、副作用和例外；L2/L3 是同一结构化规则的角色视图。L4 不要求和 BehaviorRule 一一对应，而是按真实用户意图组织，可以引用一个或多个 Rule，也可以不存在。
+
+典型关系是：
+
+```text
+多个 L1 → 一个 BehaviorRule
+一个 L1 → 多个原子 BehaviorRule
+一个 BehaviorRule → 0..N 个 L4
+多个 BehaviorRule → 一个 L4
+```
+
+因此知识质量不以各层数量相等为目标。
 
 ### Knowledge Serve Plane
 
@@ -45,15 +59,19 @@ Answer
 
 普通用户优先 `L4 → L3`；产品/测试优先 `L3 → L2`；开发优先 `L2 → L1 → Code`。
 
+正常 Serve 只消费 `published` 资产。Draft/Review/Outdated 仅在显式 Review 模式中用于知识审核，不能因为角色是产品、测试或开发就自动进入正常问答候选。
+
 ## 2. 核心领域对象
 
 ### KnowledgeItem
 
-系统中所有长期知识的统一抽象。关键字段包括 `id`、`layer`、`module`、`feature`、`content`、`status`、`derived_from`、`sources`、`visible_roles`、`behavior_rule_id`。
+系统中所有长期知识的统一抽象。关键字段包括 `id`、`layer`、`module`、`feature`、`content`、`status`、`derived_from`、`sources`、`visible_roles`、`behavior_rule_id`、`behavior_rule_ids`。
+
+`behavior_rule_id` 继续服务单 Rule 的 L2/L3 和兼容已有资产；`behavior_rule_ids` 用于 L4 等需要组合多个业务规则的用户意图知识。
 
 ### BehaviorRule
 
-当前语义核心。用于保存一个业务行为中真正需要稳定传递的结构，例如：
+当前语义核心。用于保存一个足够原子的业务行为中真正需要稳定传递的结构，例如：
 
 ```text
 actor
@@ -69,7 +87,30 @@ evidence
 
 不是所有源码细节都必须进入 BehaviorRule；只有会影响产品行为、权限、状态或用户可见结果的事实才进入。
 
-同一条 BehaviorRule 可以投影出 L2/L3/L4，不需要把核心语义依次经过多轮自然语言摘要。
+Rule 的粒度以“自身足以表达完整条件和结果”为准。若一个 Rule 只能写成“根据 actor/target/type 再决定具体权限”，而具体权限仍需要从 L1 或人工解释中补回来，就说明 Rule 过粗，应拆成更原子的规则。
+
+L2/L3 必须能从 BehaviorRule 本身重建核心语义；不能由视图重新读取 L1 后补回 Rule 中遗漏的信息。
+
+### L4 User Intent Knowledge
+
+L4 是用户真实问题的知识资产，不是 BehaviorRule 的机械翻译层。
+
+例如同一个成员添加 L1 可以拆成：
+
+```text
+公开频道 self-add 权限
+公开频道 add-other 权限
+私有频道 add-member 权限
+Direct/Group 普通加人入口拒绝
+```
+
+其中前两条 Rule 可以共同支撑一个用户问题：
+
+```text
+“为什么我能自己加入公开频道，却不能把别人加入？”
+```
+
+其他 Rule 如果暂时没有真实用户意图，可以没有 L4。
 
 ### SourceBinding
 
@@ -122,10 +163,11 @@ Channel Archive / Restore
 
 1. 按业务域和 Feature 确定源码范围；
 2. 从源码抽取 L1；
-3. 把会影响业务行为的条件、权限、状态变化和副作用结构化为 BehaviorRule；
-4. 从同一 BehaviorRule 生成 L2/L3/L4；
-5. 形成可审核的 draft knowledge；
-6. 通过真实 QA 发现知识缺口并继续补库。
+3. 把会影响业务行为的条件、权限、状态变化和副作用结构化为足够原子的 BehaviorRule；
+4. 从 Rule 形成 L2/L3 角色视图；
+5. 按真实用户意图建立 0..N 个 L4，并允许一个 L4 组合多个 Rule；
+6. 形成可审核的知识资产；
+7. 通过真实 QA 发现知识缺口并继续补库。
 
 增量更新、Webhook、commit 对齐和行号推进属于已有维护能力，不得反过来主导知识构建架构。
 
@@ -143,14 +185,20 @@ JSON 合法、ID 唯一、`derived_from` 存在只能证明结构正确，不能
 - allow / deny 是否正确；
 - actor 范围是否被扩大或缩小；
 - 状态变化和副作用是否遗漏；
-- L2/L3/L4 是否仍然表达 BehaviorRule 中的同一事实；
+- Rule 是否完整保存了视图所依赖的核心条件；
+- L2/L3 是否仍表达同一条 Rule；
+- L4 组合的多个 Rule 是否共同支撑用户答案；
 - BehaviorRule 本身是否真的得到 L1/源码支持。
 
 ### 生成不等于发布
 
 模型成功产出 L1、BehaviorRule 或角色视图，只代表“生成成功”。
 
-当前 BehaviorRule pipeline 默认输出 `draft`，不能因为 Structured Output 合法就自动成为正式知识。
+当前 BehaviorRule pipeline 默认输出 `draft`，不能因为 Structured Output 合法就自动成为正式知识。Semantic Review 通过后进入 `review`；真实 QA 验收后才进入 `published`。
+
+### 维护信息不进入知识正文
+
+发布日期、审核状态、待确认事项等属于 metadata 或 review/baseline 文档，不写入 L2/L3/L4 正文，避免污染 BM25、Embedding 和最终回答上下文。
 
 ### 框架只负责执行
 
@@ -163,16 +211,16 @@ L1  开发/测试：代码实际上做了什么
 BehaviorRule 系统内部：真实业务条件、决策、状态与副作用
 L2  开发/测试：系统稳定的工程规则是什么
 L3  产品/测试/客服：产品行为规则是什么
-L4  普通用户：实际问题应该如何解释和处理
+L4  普通用户：围绕真实问题如何解释和处理
 ```
 
-代码描述当前实现，不天然代表官方产品设计；自有产品的 L3 仍可保留产品审核边界。
+代码描述当前实现，不天然代表官方产品设计；自有产品的 L3/L4 仍可保留产品审核边界。
 
 ## 6. 当前实现状态
 
 BehaviorRule 核心已经实现并接入新的 scope compiler。
 
-Mattermost Channel 已形成完整可执行业务域：
+Mattermost Channel 五个核心 Feature 已经形成第一版源码支撑的知识基线：
 
 ```text
 Channel
@@ -183,7 +231,11 @@ Channel
 └─ Archive / Restore
 ```
 
-域级编译入口：
+第一版基线已经完成源码语义核查和 Coverage 记录，但此前曾出现“尚未经过真实 QA 就批量 Published”的发布错误。当前治理阶段已将这批新基线恢复为 `review`，正常 Serve 继续只消费 Published 资产。
+
+同时已经开始修正一一对应模型：BehaviorRule 自动投影只生成 L2/L3；L4 改为用户意图资产并支持多个 `behavior_rule_ids`。Membership 的 `add_permission_split` 已作为第一处样例从一条过粗 Rule 拆成四条原子 Rule，并用其中两条共同支撑一条 FAQ。
+
+域级编译入口仍保留：
 
 ```bash
 python scripts/compile_domain.py \
@@ -193,13 +245,13 @@ python scripts/compile_domain.py \
   --summary .scratch/channel-domain-summary.json
 ```
 
-当前还需要完成的不是继续扩基础结构，而是：
+当前主任务不是继续扩基础结构，而是：
 
-1. 在真实 Mattermost checkout + 模型凭据环境跑完五个 Channel Feature；
-2. 审核完整 L1 / BehaviorRule / L2/L3/L4 的语义质量；
-3. 形成第一版 Channel Knowledge Coverage；
-4. 将通过审核的知识发布到 canonical Markdown / Qdrant；
-5. 用代表性真实问题测试 QA，并把 gap 反馈到下一批知识构建。
+1. 审核剩余 Channel BehaviorRule 是否仍有过粗或语义缺失；
+2. 清理旧 Creation 与新基线的重复/冲突知识，保留真正有独立用户意图价值的 L4；
+3. 用代表性真实问题执行 QA 验收；
+4. 逐 Feature 发布通过 QA 的资产，而不是整批状态翻转；
+5. 再根据 Knowledge Gap 决定补哪些 Channel 子能力或进入下一个业务域。
 
 自动 Repository Graph / 全仓调用图不再是进入这一步的前置条件；如果后续手工 scope 成本成为真实瓶颈，再按业务需要增加入口发现自动化。
 
