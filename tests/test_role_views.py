@@ -82,9 +82,7 @@ def test_developer_serve_and_review_boundaries(catalog) -> None:
 
 def test_drill_respects_normal_serve_status(catalog) -> None:
     l3 = _item(catalog, TEAM_CHANNEL_L3)
-    # Its historical L2 parents are draft, so normal product serve does not expose them.
     assert drill_down(catalog, l3, UserRole.PRODUCT) == []
-    # Management/review view can still inspect raw lineage.
     parents = drill_down(catalog, l3, None)
     assert len(parents) == 2
     assert all(item.layer == KnowledgeLayer.L2_ENGINEERING_RULE for item in parents)
@@ -127,9 +125,9 @@ def test_api_detail_uses_normal_serve_visibility() -> None:
 
 
 def test_api_lineage_and_drill_enforce_serve_visibility() -> None:
-    ok = client.get(f"/api/v1/knowledge/{LIMIT_FAQ}/lineage", params={"role": "user")
+    ok = client.get(f"/api/v1/knowledge/{LIMIT_FAQ}/lineage", params={"role": "user"})
     assert ok.status_code == 200
-    hidden = client.get(f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/lineage", params={"role": "user")
+    hidden = client.get(f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/lineage", params={"role": "user"})
     assert hidden.status_code == 404
     drill = client.get(
         f"/api/v1/knowledge/{TEAM_CHANNEL_L3}/drill", params={"role": "product"}
