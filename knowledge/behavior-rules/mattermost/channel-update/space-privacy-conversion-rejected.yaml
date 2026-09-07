@@ -1,0 +1,19 @@
+id: rule.mattermost.channel.update.space_privacy_conversion_rejected
+title: Space 不支持公开/私有频道转换
+domain: mattermost.channel
+capability: update
+actor: requester
+action: convert_channel_privacy
+resource: channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: space
+  any: []
+decision: reject_privacy_conversion
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.update.privacy_conversion.fact

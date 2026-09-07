@@ -6,18 +6,11 @@ feature: channel_update
 status: review
 version: 1
 derived_from:
-- product.mattermost.channel.update.privacy_conversion
-behavior_rule_id: rule.mattermost.channel.update.privacy_conversion
-tags:
-- mattermost
-- channel
-- channel_update
-visible_roles:
-- user
-- product
-- test
-- developer
-- admin
+- product.mattermost.channel.update.private_to_public_conversion
+behavior_rule_ids:
+- rule.mattermost.channel.update.private_to_public_conversion
+tags: [mattermost, channel, channel_update]
+visible_roles: [user, product, test, developer, admin]
 ---
 
 # 为什么把私有频道转成公开后，待审批的加入申请消失了？

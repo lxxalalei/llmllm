@@ -6,18 +6,15 @@ feature: channel_update
 status: review
 version: 1
 derived_from:
-- product.mattermost.channel.update.property_permission_by_type
-behavior_rule_id: rule.mattermost.channel.update.property_permission_by_type
-tags:
-- mattermost
-- channel
-- channel_update
-visible_roles:
-- user
-- product
-- test
-- developer
-- admin
+- product.mattermost.channel.update.open_property_permission
+- product.mattermost.channel.update.private_property_permission
+- product.mattermost.channel.update.direct_group_limited_update
+behavior_rule_ids:
+- rule.mattermost.channel.update.open_property_permission
+- rule.mattermost.channel.update.private_property_permission
+- rule.mattermost.channel.update.direct_group_limited_update
+tags: [mattermost, channel, channel_update]
+visible_roles: [user, product, test, developer, admin]
 ---
 
 # 为什么我能修改频道头部信息，却不能给群聊改频道名称？

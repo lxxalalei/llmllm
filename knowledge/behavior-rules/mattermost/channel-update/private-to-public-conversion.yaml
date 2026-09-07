@@ -1,0 +1,44 @@
+id: rule.mattermost.channel.update.private_to_public_conversion
+title: 私有频道转公开需要专用权限并清理私有申请状态
+domain: mattermost.channel
+capability: update
+actor: requester
+action: convert_channel_privacy
+resource: channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: private
+  - field: target_type
+    operator: equals
+    value: open
+  - field: requester.permission.convert_private_channel_to_public
+    operator: equals
+    value: true
+  any: []
+decision: convert_channel_to_open
+state_changes:
+- kind: update
+  target: channel.type
+  detail: private to open
+- kind: update
+  target: channel.discoverable
+  detail: open channel does not retain private discoverability
+side_effects:
+- kind: system_post
+  target: channel
+  detail: privacy change
+- kind: cleanup
+  target: pending_join_requests
+  detail: withdraw after a previously discoverable private channel becomes open
+exceptions:
+- conditions:
+    all:
+    - field: privacy_system_post
+      operator: failed
+      value: true
+    any: []
+  outcome: rollback channel.type and discoverable to previous values
+source_fact_ids:
+- eng.mattermost.channel.update.privacy_conversion.fact

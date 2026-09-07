@@ -1,0 +1,19 @@
+id: rule.mattermost.channel.archive_restore.already_archived_rejected
+title: 已归档频道不能重复归档
+domain: mattermost.channel
+capability: archive_restore
+actor: requester
+action: archive_channel
+resource: channel
+conditions:
+  all:
+  - field: channel.archived
+    operator: equals
+    value: true
+  any: []
+decision: reject_archive_request
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.archive_restore.archive_permission_and_default.fact

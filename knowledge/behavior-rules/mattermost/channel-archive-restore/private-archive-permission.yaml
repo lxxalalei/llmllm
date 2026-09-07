@@ -1,0 +1,25 @@
+id: rule.mattermost.channel.archive_restore.private_archive_permission
+title: 归档私有频道需要 delete_private_channel
+domain: mattermost.channel
+capability: archive_restore
+actor: requester
+action: archive_channel
+resource: channel
+conditions:
+  all:
+  - field: channel.type
+    operator: equals
+    value: private
+  - field: channel.archived
+    operator: equals
+    value: false
+  - field: requester.permission.delete_private_channel
+    operator: equals
+    value: true
+  any: []
+decision: allow_archive_request
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.archive_restore.archive_permission_and_default.fact

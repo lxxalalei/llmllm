@@ -1,0 +1,23 @@
+id: rule.mattermost.channel.update.unsupported_property_update_type
+title: 未知频道类型拒绝通用属性更新
+domain: mattermost.channel
+capability: update
+actor: requester
+action: update_channel_properties
+resource: channel
+conditions:
+  all:
+  - field: channel.type
+    operator: not_in
+    value:
+    - open
+    - private
+    - direct
+    - group
+  any: []
+decision: reject_channel_property_update
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.update.property_permission_by_type.fact
