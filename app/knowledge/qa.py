@@ -193,6 +193,7 @@ async def answer_question(
     embedder=None,
     reranker=None,
     intent_classifier=None,
+    review_mode: bool = False,
 ) -> dict[str, object]:
     """Intent-routed, role-filtered, grounded QA.
 
@@ -224,7 +225,13 @@ async def answer_question(
             from app.knowledge.retrieval import retrieve_hybrid
 
             hits = await retrieve_hybrid(
-                catalog, question, role, vector_index, embedder, top_k=candidate_k
+                catalog,
+                question,
+                role,
+                vector_index,
+                embedder,
+                top_k=candidate_k,
+                review_mode=review_mode,
             )
             used_backend = "hybrid"
         except Exception:
@@ -232,7 +239,9 @@ async def answer_question(
     if hits is None:
         from app.knowledge.retrieval import retrieve
 
-        hits = retrieve(catalog, question, role, top_k=candidate_k)
+        hits = retrieve(
+            catalog, question, role, top_k=candidate_k, review_mode=review_mode
+        )
         used_backend = "local"
     if reranker is not None and hits:
         try:

@@ -23,6 +23,10 @@ class QaRequest(BaseModel):
     question: str = Field(min_length=2, max_length=500)
     role: UserRole = UserRole.USER
     top_k: int = Field(default=4, ge=1, le=8)
+    review_mode: bool = Field(
+        default=False,
+        description="explicit audit/QA mode; review assets become retrievable (never for role=user)",
+    )
 
 
 class Cite(BaseModel):
@@ -109,6 +113,7 @@ async def qa(payload: QaRequest) -> QaResponse:
             embedder=embedder,
             reranker=reranker,
             intent_classifier=intent_classifier,
+            review_mode=payload.review_mode,
         )
     finally:
         await responder.close()

@@ -63,7 +63,9 @@ async def retrieve_hybrid(
     review_mode: bool = False,
 ) -> list[RetrievalHit]:
     """Dense + sparse retrieval with the same serve/review visibility policy."""
-    dense = await vector_index.search(question, embedder, role, limit=top_k * 3)
+    dense = await vector_index.search(
+        question, embedder, role, limit=top_k * 3, include_unpublished=review_mode
+    )
     dense_ids = [knowledge_id for knowledge_id, _score in dense]
     sparse = retrieve(
         catalog,

@@ -39,11 +39,18 @@ def _payload(item: KnowledgeItem) -> dict[str, object]:
     }
 
 
-def role_filter(role: UserRole) -> Filter:
-    """Qdrant-side role gate mirroring views.role_allows."""
+def role_filter(role: UserRole, include_unpublished: bool = False) -> Filter:
+    """Qdrant-side gate for serve vs review mode.
+
+    Serve mode consumes only Published assets for every role. Review mode
+    (include_unpublished=True) is an explicit audit/QA mode and is never
+    available to the USER role.
+    """
     must = [FieldCondition(key="visible_roles", match=MatchValue(value=role.value))]
     if role == UserRole.USER:
         must.append(FieldCondition(key="layer", match=MatchAny(any=["L3", "L4"])))
+        must.append(FieldCondition(key="status", match=MatchValue(value="published")))
+    elif not include_unpublished:
         must.append(FieldCondition(key="status", match=MatchValue(value="published")))
     return Filter(must=must)
 
@@ -165,6 +172,7 @@ class KnowledgeVectorIndex:
         embedder: EmbeddingProvider,
         role: UserRole,
         limit: int = 10,
+        include_unpublished: bool = False,
     ) -> list[tuple[str, float]]:
         if limit <= 0:
             return []
@@ -172,7 +180,7 @@ class KnowledgeVectorIndex:
         response = await self._client.query_points(
             collection_name=self._collection,
             query=vector,
-            query_filter=role_filter(role),
+            query_filter=role_filter(role, include_unpublished=include_unpublished),
             limit=limit,
             with_payload=True,
         )

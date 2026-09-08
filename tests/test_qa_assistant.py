@@ -79,6 +79,8 @@ def test_qa_endpoint_hardens_citations_and_reports_gap(monkeypatch) -> None:
         }
     )
     monkeypatch.setattr(qa_routes, "_build_responder", lambda: fake)
+    monkeypatch.setattr(qa_routes, "_build_intent_classifier", lambda: None)
+    monkeypatch.setattr(qa_routes.settings, "retrieval_backend", "local")
     response = client.post("/api/v1/qa", json={"question": "为什么我不能继续创建频道？", "role": "user"})
     assert response.status_code == 200
     payload = response.json()
@@ -96,6 +98,8 @@ def test_qa_endpoint_gap_flag_passthrough(monkeypatch) -> None:
 
     fake = _FakeResponder({"answer": "暂无覆盖。", "cites": [], "knowledge_gap": True})
     monkeypatch.setattr(qa_routes, "_build_responder", lambda: fake)
+    monkeypatch.setattr(qa_routes, "_build_intent_classifier", lambda: None)
+    monkeypatch.setattr(qa_routes.settings, "retrieval_backend", "local")
     response = client.post("/api/v1/qa", json={"question": "这个问题知识库没有", "role": "user"})
     assert response.status_code == 200
     assert response.json()["knowledge_gap"] is True
