@@ -105,9 +105,14 @@ async def test_index_sync_search_and_role_filter() -> None:
         assert "faq.demo.limit" in user_ids
         assert "eng.demo.rule" not in user_ids  # user must not see L2
 
-        product_hits = await index.search("MaxChannelsPerTeam 检查", embedder, UserRole.PRODUCT, limit=10)
-        product_ids = {hit_id for hit_id, _score in product_hits}
-        assert "eng.demo.rule" in product_ids
+        # serve mode: product role also sees published only -> draft L2 excluded
+        product_serve = await index.search("MaxChannelsPerTeam 检查", embedder, UserRole.PRODUCT, limit=10)
+        assert "eng.demo.rule" not in {hit_id for hit_id, _score in product_serve}
+        # explicit review mode surfaces it
+        product_review = await index.search(
+            "MaxChannelsPerTeam 检查", embedder, UserRole.PRODUCT, limit=10, include_unpublished=True
+        )
+        assert "eng.demo.rule" in {hit_id for hit_id, _score in product_review}
 
         # orphan cleanup on re-sync
         result2 = await index.replace_all([items[0]], embedder)

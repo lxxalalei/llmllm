@@ -3,7 +3,7 @@ id: faq.mattermost.channel.membership.self_vs_add_other_permission
 layer: L4
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 derived_from:
 - product.mattermost.channel.membership.open_self_add_permission

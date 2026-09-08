@@ -3,7 +3,7 @@ id: eng.mattermost.channel.membership.discoverable_self_add.fact
 layer: L1
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost

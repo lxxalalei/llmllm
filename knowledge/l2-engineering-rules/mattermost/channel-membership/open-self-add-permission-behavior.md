@@ -3,7 +3,7 @@ id: eng.mattermost.channel.membership.open_self_add_permission.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_membership
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.membership.add_permission_split.fact
