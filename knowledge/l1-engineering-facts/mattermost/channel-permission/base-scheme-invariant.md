@@ -3,7 +3,7 @@ id: eng.mattermost.channel.permission.base_scheme_invariant.fact
 layer: L1
 module: mattermost.channel
 feature: channel_permission
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost

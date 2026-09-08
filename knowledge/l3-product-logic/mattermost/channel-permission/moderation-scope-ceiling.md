@@ -3,7 +3,7 @@ id: product.mattermost.channel.permission.moderation_scope_ceiling
 layer: L3
 module: mattermost.channel
 feature: channel_permission
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.permission.moderation_scope_ceiling.behavior

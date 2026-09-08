@@ -11,7 +11,7 @@ client = TestClient(app)
 
 LIMIT_FAQ = "faq.mattermost.channel.create.limit"
 TEAM_CHANNEL_L3 = "product.mattermost.channel.create.team_channel"
-MANAGED_L3 = "product.mattermost.channel.create.managed_category"
+MANAGED_L3 = "product.mattermost.channel.archive_restore.already_archived_rejected"  # archive domain still in review
 SPACE_DRAFT_L4 = "faq.mattermost.channel.create.space_unavailable"
 STANDARD_FLOW_L2 = "eng.mattermost.channel.create.standard_flow"
 TEAM_LIMIT_L1 = "eng.mattermost.channel.create.team_limit"

@@ -3,7 +3,7 @@ id: eng.mattermost.channel.update.public_to_private_conversion.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.update.privacy_conversion.fact

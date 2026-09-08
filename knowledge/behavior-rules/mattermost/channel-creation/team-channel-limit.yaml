@@ -1,0 +1,19 @@
+id: rule.mattermost.channel.creation.team_channel_limit
+title: 创建团队频道不得超过团队频道数量上限
+domain: mattermost.channel
+capability: channel_creation
+actor: requester
+action: create_team_channel
+resource: team
+conditions:
+  all:
+  - field: channels_after_create
+    operator: greater_than
+    value: team.max_channels_per_team
+  any: []
+decision: reject_create_with_channel_limit_error
+state_changes: []
+side_effects: []
+exceptions: []
+source_fact_ids:
+- eng.mattermost.channel.creation.team_channel_limit.fact

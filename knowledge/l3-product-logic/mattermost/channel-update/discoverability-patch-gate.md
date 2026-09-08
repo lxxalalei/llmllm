@@ -3,7 +3,7 @@ id: product.mattermost.channel.update.discoverability_patch_gate
 layer: L3
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.update.discoverability_patch_gate.behavior

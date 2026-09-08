@@ -3,7 +3,7 @@ id: product.mattermost.channel.update.unsupported_property_update_type
 layer: L3
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.update.unsupported_property_update_type.behavior

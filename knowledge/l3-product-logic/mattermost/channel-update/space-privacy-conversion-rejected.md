@@ -3,7 +3,7 @@ id: product.mattermost.channel.update.space_privacy_conversion_rejected
 layer: L3
 module: mattermost.channel
 feature: channel_update
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.update.space_privacy_conversion_rejected.behavior

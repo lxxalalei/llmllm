@@ -3,7 +3,7 @@ id: eng.mattermost.channel.creation.creation_side_effects.fact
 layer: L1
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost

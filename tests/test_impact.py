@@ -100,8 +100,8 @@ def test_propose_state_rules_on_real_catalog() -> None:
     assert propose_state(catalog.get("eng.mattermost.channel.create.team_limit")).value == "outdated"
     assert propose_state(catalog.get("eng.mattermost.channel.create.standard_flow")).value == "outdated"
     assert propose_state(catalog.get("product.mattermost.channel.create.team_channel")).value == "review"
-    assert propose_state(catalog.get("product.mattermost.channel.create.managed_category")) is None
-    assert propose_state(catalog.get("product.mattermost.channel.create.space_availability")) is None
+    assert propose_state(catalog.get("product.mattermost.channel.create.managed_category")).value == "review"
+    assert propose_state(catalog.get("product.mattermost.channel.create.space_availability")).value == "review"
     assert propose_state(catalog.get("faq.mattermost.channel.create.limit")).value == "outdated"
     assert propose_state(catalog.get("faq.mattermost.channel.create.space_unavailable")) is None
 

@@ -3,7 +3,7 @@ id: faq.mattermost.channel.create.creator_auto_join
 layer: L4
 module: mattermost.channel
 feature: channel_creation
-status: published
+status: deprecated
 version: 1
 derived_from:
   - product.mattermost.channel.create.team_channel

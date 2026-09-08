@@ -3,7 +3,7 @@ id: eng.mattermost.channel.creation.create_private_permission.behavior
 layer: L2
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.creation.create_permission_gate.fact

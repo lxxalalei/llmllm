@@ -3,7 +3,7 @@ id: product.mattermost.channel.creation.standard_create_required_fields
 layer: L3
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.creation.standard_create_required_fields.behavior

@@ -20,14 +20,14 @@ def test_review_mode_retrieval_includes_review_assets() -> None:
     catalog = KnowledgeCatalog.from_directory(Path("knowledge"))
     hits = retrieve(
         catalog,
-        "修改频道成员角色或频道权限开关需要什么权限？",
+        "恢复已经归档的频道需要什么权限？",
         UserRole.PRODUCT,
         top_k=8,
         review_mode=True,
     )
     review_hits = [h.item.id for h in hits if h.item.status.value == "review"]
     assert review_hits, "review mode must surface review assets (permission domain still in review)"
-    assert any("permission" in hid for hid in review_hits)
+    assert any("archive_restore" in hid for hid in review_hits)
 
 
 def test_dense_role_filter_serves_only_published_outside_review() -> None:
