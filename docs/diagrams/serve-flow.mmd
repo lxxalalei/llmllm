@@ -1,0 +1,37 @@
+flowchart TB
+    START(["用户问题（自然语言）"])
+    API["POST /api/v1/qa<br/>入参: question · role(user/product/test/<br/>developer/admin) · top_k · review_mode"]
+    INTENT{"意图路由<br/>quick gate + LLM classifier"}
+    NON["chat / off_topic / sensitive 分支<br/>自然回复 · 拒绝引导 · 不检索不引用"]
+    ROLE{"角色可见边界<br/>role ∈ item.visible_roles ?"}
+    STATUS{"状态门禁<br/>仅 published 可进入正常问答<br/>review_mode=true 才放开<br/>draft/review/outdated（审核工具用）"}
+    LAYER{"层可见性<br/>role=user 仅 L3/L4"}
+    BK{"检索后端选择"}
+    BM25["本地 BM25 稀疏召回<br/>app/knowledge/bm25.py"]
+    HYB["混合召回<br/>Qdrant dense + BM25 sparse<br/>→ RRF 融合（app/knowledge/retrieval.py）"]
+    RR["可选 LLM Reranker<br/>→ 取 top_k"]
+    GROUND["Grounded 生成（LLM Structured Output）<br/>answer / cites / knowledge_gap<br/>必须引用实际检索到的资产"]
+    NOHIT{"无命中 或 模型报 gap ?"}
+    HONEST["诚实返回<br/>『知识库暂无覆盖该问题』<br/>knowledge_gap=true"]
+    ANS["返回 answer + cites<br/>（cites 只保留 retrieved 集合内 id）"]
+    LOG["记录查询日志 → PostgreSQL<br/>app/knowledge/analytics.py<br/>/api/v1/analytics/queries 可查"]
+    TRACE["后续下钻<br/>GET /knowledge/{id}/drill · /lineage<br/>开发可逐层追溯到 L1 → repo+file+symbol"]
+    START --> API --> INTENT
+    INTENT -->|"非知识意图"| NON
+    INTENT -->|"知识意图"| ROLE -->|否| DENY["资产不可见 / 未发布 →<br/>不进入检索候选（不暴露存在性）"]
+    ROLE -->|是| STATUS -->|非 published 且非 review_mode| DENY
+    STATUS -->|通过| LAYER --> BK
+    BK -->|"hybrid 可用"| HYB
+    BK -->|"否则回退 local"| BM25
+    HYB --> RR
+    BM25 --> RR
+    RR --> GROUND --> NOHIT
+    NOHIT -->|"是"| HONEST
+    NOHIT -->|"否"| ANS
+    HONEST --> LOG --> TRACE
+    ANS --> LOG
+    LOG --> GAP2["Knowledge Gap 反向驱动<br/>知识生产补库"]
+    classDef deny fill:#f4cccc,stroke:#990000,stroke-width:1px;
+    classDef pass fill:#d9ead3,stroke:#38761d;
+    class ROLE,STATUS,LAYER pass;
+    class DENY deny;

@@ -1,0 +1,22 @@
+flowchart TB
+    S1["① 选定业务域（当前: mattermost.channel）<br/>KnowledgeDomainManifest 定义 domain = 5 个 Feature"]
+    S2["② 拆解 Feature Scope<br/>creation / membership / permission / update-privacy / archive-restore<br/>每个 scope 声明 repo+ref+目标 file+symbol 列表"]
+    S3["③ 逐 scope 执行<br/>scripts/compile_domain.py（域）<br/>scripts/compile_scope.py（单 feature，pipeline=behavior_rule）"]
+    S4["④ 读取并定位真实源码<br/>git 检出 → file/symbol 必须真实存在<br/>SourceBinding 只收 repo+file+symbol（行号可选）"]
+    S5["⑤ 生成 L1 工程事实（N 条）<br/>LLM Structured Output<br/>记录权限检查/allow-deny/条件/状态变化/副作用/异常"]
+    S6["⑥ 抽取 BehaviorRule（原子业务事实）<br/>actor/action/resource/conditions/decision/<br/>state_changes/side_effects/exceptions/evidence<br/>★ 默认状态 = draft（生成 ≠ 发布）"]
+    S7["⑦ 视图生产<br/>L2/L3 = Rule 自动投影（工程/产品视图）<br/>L4 = 真实用户意图资产，0..N 个 Rule 组合"]
+    S8["⑧ 语义审核<br/>条件反转? allow/deny? actor 范围? 状态遗漏?<br/>通过 → review"]
+    S9["⑨ 写入 canonical 知识库<br/>Git knowledge/{l1-engineering-facts, behavior-rules,<br/>l2-engineering-rules, l3-product-logic, l4-user-knowledge}"]
+    S10["⑩ 同步检索索引<br/>Qdrant 增量刷新（需要产品运行环境时）"]
+    S11["⑪ 真实 QA 验收<br/>15+ 代表性问题 regression set（config/qa_regression）"]
+    S12["⑫ 按 Feature 逐批发布 review → published<br/>禁止无 QA 整批翻转"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8 --> S9 --> S10 --> S11
+    S11 -->|"全部通过"| S12
+    S11 -->|"错答 / 缺口"| GAP["Knowledge Gap<br/>回溯到缺失 Rule / 缺失源码范围"]
+    GAP --> S4
+    S12 -.维护新缺口.-> GAP
+    classDef gate fill:#fff3cd,stroke:#d4a017,stroke-width:1.5px;
+    class S8 gate;
+    classDef state fill:#f4cccc,stroke:#990000,stroke-width:1px;
+    class S6 state;

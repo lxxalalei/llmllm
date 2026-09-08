@@ -1,0 +1,13 @@
+flowchart LR
+    WH["GitHub push Webhook<br/>POST /api/v1/webhooks/github<br/>X-GitHub-Event=push"]
+    VALID{"校验<br/>event=push<br/>before≠0x40<br/>after≠0x40"}
+    DETECT["analyze_repository_change<br/>app/integrations/github.py<br/>changed symbol 检测"]
+    IMPACT["SourceBinding 影响定位<br/>app/knowledge/impact.py upstream_items<br/>受影响 L1 → Rule → 视图"]
+    REGEN["增量重生成<br/>scripts/regenerate_mattermost_change.py<br/>L1 / L2 重生成"]
+    PROP["状态传播<br/>L3 → review · L4 → outdated<br/>（不自动发布）"]
+    PUB2["发布<br/>scripts/publish_regeneration.py<br/>写入 canonical + Qdrant 增量刷新"]
+    WH --> VALID -->|合法 push| DETECT --> IMPACT --> REGEN --> PROP --> PUB2
+    VALID -->|"其他/初始 push/删分支"| REJ["4xx 拒绝"]
+    classDef sub fill:#e6e6e6,stroke:#666,stroke-dasharray:3 2;
+    class WH,VALID,DETECT,IMPACT,REGEN,PROP,PUB2 sub;
+    REJ -.-> DETECT

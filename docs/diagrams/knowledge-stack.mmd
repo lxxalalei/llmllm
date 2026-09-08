@@ -1,0 +1,22 @@
+flowchart BT
+    CODE["CODE 成熟产品源码<br/>证据 = repo + file + symbol"]
+    L1["L1 工程事实 Engineering Facts（N）<br/>代码实际上做了什么（开发语言）"]
+    BR["BehaviorRule 结构化业务事实（原子）<br/>actor · action · resource · conditions<br/>decision · state_changes · side_effects<br/>exceptions · evidence"]
+    L2["L2 工程规则视图 Engineering View"]
+    L3["L3 产品规则视图 Product View"]
+    L4["L4 用户意图知识 User Intent Knowledge<br/>一个真实用户问题可组合 0..N 个 Rule"]
+    CODE -->|"读取证据，产出"| L1
+    L1 -->|"多个 L1 支撑 1 个 Rule<br/>1 个 L1 也可拆出多个 Rule"| BR
+    BR -->|"自动投影（不引入 Rule 之外的新事实）"| L2
+    BR -->|"自动投影"| L3
+    L4 -. "按真实用户意图，组合引用 0..N 个 Rule（behavior_rule_ids）" .-> BR
+    U_DEV["开发: L2 → L1 → Code"]
+    U_PT["产品/测试/客服: L3 → L2"]
+    U_USER["普通用户: L4 → L3"]
+    U_DEV -.消费.-> L2
+    U_PT -.消费.-> L3
+    U_USER -.消费.-> L4
+    classDef src fill:#d9ead3,stroke:#38761d,stroke-width:2px;
+    classDef core fill:#fff3cd,stroke:#d4a017,stroke-width:2px;
+    class CODE src;
+    class BR core;

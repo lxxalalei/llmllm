@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph BUILD["知识生产平面 Knowledge Build（离线 · 低频 · 当前主线）"]
+        direction TB
+        SRC["成熟产品源码 checkout<br/>样板: mattermost/mattermost<br/>事实=code"]
+        CONF["业务域 / Feature 范围<br/>config/knowledge_domains/mattermost-channel.json<br/>+ 5 个 knowledge_scopes"]
+        COMP["域级编译入口<br/>scripts/compile_domain.py → compile_scope.py"]
+        PARSE["源码盘点与符号定位<br/>app/code_index（Tree-sitter Go/Python）<br/>file + symbol"]
+        L1G["L1 工程事实生成<br/>app/knowledge/l1_generator.py + app/llm"]
+        BRG["BehaviorRule 结构化抽取<br/>actor/conditions/decision/state_changes/evidence<br/>默认 draft"]
+        PROJ["L2/L3 视图投影 + L4 用户意图<br/>app/knowledge/behavior_views.py / upper_generator.py"]
+        REV["语义审核 gate"]
+        PUB["Publish<br/>scripts/publish_regeneration.py → 写入 canonical"]
+        SRC --> CONF --> COMP --> PARSE --> L1G --> BRG --> PROJ --> REV --> PUB
+    end
+    subgraph STORE["存储职责（真相源只有一个）"]
+        direction LR
+        GIT["Git + Markdown/YAML<br/>knowledge/ 各层资产目录<br/>★ 正式知识 = 真相源"]
+        PG[("PostgreSQL<br/>运行数据 · 关系 · 状态<br/>查询日志 · 构建进度")]
+        QD[("Qdrant<br/>检索索引<br/>✗ 不是真相源")]
+    end
+    subgraph SERVE["知识服务平面 Knowledge Serve（在线 · 低延迟）"]
+        direction TB
+        WEB["入口<br/>app/web/chat.html + FastAPI<br/>/api/v1/qa · /knowledge · /analytics · /webhooks"]
+        QAENG["角色感知问答引擎<br/>intent 路由 → 角色/状态过滤 → 检索 → grounded 生成"]
+        TRACE["追溯能力<br/>/drill 下钻 · /lineage 血缘（按角色可见性）"]
+        WEB --> QAENG --> TRACE
+    end
+    subgraph USERS["用户与知识视图（同一套语义事实，不同深度）"]
+        U1["普通用户<br/>L4 → L3"]
+        U2["产品 / 测试 / 客服<br/>L3 → L2"]
+        U3["开发<br/>L2 → L1 → Code"]
+    end
+    MAINT["次要维护能力（Phase 3 已冻结）<br/>GitHub push webhook → 变更符号 →<br/>影响传播 → 增量重生成 → review/outdated"]
+    PUB --> GIT
+    GIT -.元数据 / 状态同步.-> PG
+    GIT -. "scripts/sync_qdrant.py 增量刷新" .-> QD
+    GIT -->|"Serve 只消费 published 资产"| QAENG
+    PG -.查询日志 / Knowledge Gap.-> QAENG
+    QD -.dense 召回.-> QAENG
+    QAENG --> USERS
+    TRACE -.可回到真实源码核对.-> GIT
+    MAINT -.changed symbols / 影响传播.-> BUILD
+    classDef gate fill:#fff3cd,stroke:#d4a017,stroke-width:1.5px;
+    class REV gate;
+    classDef truth fill:#d9ead3,stroke:#38761d,stroke-width:2px;
+    class GIT truth;
+    classDef idx fill:#d9e2f3,stroke:#1c4587,stroke-width:1px;
+    class QD idx;
