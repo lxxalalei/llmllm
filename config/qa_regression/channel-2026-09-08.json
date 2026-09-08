@@ -1,0 +1,133 @@
+{
+  "domain": "mattermost.channel",
+  "created": "2026-09-08",
+  "goal": "governance QA regression: intent L4 retrieval, serve/review isolation, gap honesty",
+  "questions": [
+    {
+      "id": "c1",
+      "question": "为什么我创建频道时会提示已达团队频道数量上限？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "published FAQ 命中频道数量上限，给出上限配置解释"
+    },
+    {
+      "id": "c2",
+      "question": "新建的频道为什么会出现在我的默认分类里，还有一条加入消息？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "published FAQ 组合（默认分类 + 加入消息）"
+    },
+    {
+      "id": "c3",
+      "question": "公开频道和私有频道创建后，创建者会自动成为频道成员吗？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "published FAQ creator_auto_join 等"
+    },
+    {
+      "id": "m1",
+      "question": "为什么我能自己加入公开频道，却不能把别人加入？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "self_vs_add_other_permission FAQ + open_self_add/open_add_other 两条规则组合"
+    },
+    {
+      "id": "m2",
+      "question": "受群组约束的频道，为什么非群组成员加不进去？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "group_constrained_membership 相关 L3/L4"
+    },
+    {
+      "id": "m3",
+      "question": "把成员移出频道时，系统会做哪些清理？",
+      "role": "developer",
+      "review_mode": true,
+      "expect": "remove_cleanup 相关 L2/L1 与副作用"
+    },
+    {
+      "id": "m4",
+      "question": "管理员有权限加人，但目标用户还是加不进频道，可能是什么原因？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "组合 team_member_integrity + group_constrained_membership（治理评审示例）"
+    },
+    {
+      "id": "p1",
+      "question": "修改频道成员角色需要什么权限？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "manage_member_roles 规则/视图，明确 manage_channel_roles"
+    },
+    {
+      "id": "p2",
+      "question": "为什么频道管理员不能给成员授予超过自己角色的权限？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "moderation_scope_ceiling / 权限上限语义"
+    },
+    {
+      "id": "p3",
+      "question": "通过 API 修改成员角色时，基础角色标记会被去掉吗？",
+      "role": "developer",
+      "review_mode": true,
+      "expect": "base_scheme_invariant 语义（normal path 必须保留 scheme 身份）"
+    },
+    {
+      "id": "u1",
+      "question": "把私有频道改成公开后，频道会变得可被发现吗？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "published 或 gap：若 L4 未发布则记录 Gap（serve 模式）"
+    },
+    {
+      "id": "u2",
+      "question": "修改频道名称或描述时有什么限制？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "property_permission_by_type 原子规则相关视图"
+    },
+    {
+      "id": "u3",
+      "question": "公开频道转私有与私有频道转公开的规则有什么不同？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "privacy_conversion 方向拆分（public_to_private / private_to_public）"
+    },
+    {
+      "id": "a1",
+      "question": "为什么 Town Square（默认频道）不能被归档？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "serve 无 published 覆盖时记录 Gap；review 下 town_square_archive_rejected 命中"
+    },
+    {
+      "id": "a2",
+      "question": "归档普通频道需要什么权限？归档和删除是一回事吗？",
+      "role": "product",
+      "review_mode": true,
+      "expect": "open/private_archive_permission + archive vs delete 区分"
+    },
+    {
+      "id": "a3",
+      "question": "恢复一个已归档频道会通知客户端吗？",
+      "role": "developer",
+      "review_mode": true,
+      "expect": "restore_state_and_event 相关"
+    },
+    {
+      "id": "g1",
+      "question": "频道可以设置定时消息提醒吗？",
+      "role": "user",
+      "review_mode": false,
+      "expect": "Knowledge Gap（不应编造）"
+    },
+    {
+      "id": "g2",
+      "question": "通过 API 归档频道时 audit 记录是即时写入的吗？",
+      "role": "developer",
+      "review_mode": true,
+      "expect": "如果无对应规则 -> Gap；有则命中延迟审计语义"
+    }
+  ]
+}
