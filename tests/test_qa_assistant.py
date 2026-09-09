@@ -126,3 +126,32 @@ def test_parse_answer_text_reports_corrupt_output() -> None:
 
     with pytest.raises(ValueError, match="non-JSON"):
         _parse_answer_text("oops this is not json")
+
+def test_qa_endpoint_gap_forces_empty_cites(monkeypatch) -> None:
+    """knowledge_gap=true 时，无论模型返回什么 cites，响应 cites 必须为空。"""
+    from app.api.routes import qa as qa_routes
+
+    fake = _FakeResponder(
+        {
+            "answer": "现有资料没有覆盖该问题，无法回答。",
+            "cites": ["faq.mattermost.channel.create.limit"],
+            "knowledge_gap": True,
+        }
+    )
+    monkeypatch.setattr(qa_routes, "_build_responder", lambda: fake)
+    monkeypatch.setattr(qa_routes, "_build_intent_classifier", lambda: None)
+    monkeypatch.setattr(qa_routes.settings, "retrieval_backend", "local")
+    response = client.post("/api/v1/qa", json={"question": "为什么我不能继续创建频道？", "role": "user"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["knowledge_gap"] is True
+    assert payload["cites"] == []
+
+
+def test_qa_instructions_require_empty_cites_on_gap() -> None:
+    """提示词必须显式要求：knowledge_gap=true 时 cites 为空数组。"""
+    from app.knowledge.qa import NO_KNOWLEDGE_INSTRUCTIONS, SYSTEM_INSTRUCTIONS
+
+    assert "knowledge_gap is true" in SYSTEM_INSTRUCTIONS
+    assert "empty array" in SYSTEM_INSTRUCTIONS.lower() or "empty" in SYSTEM_INSTRUCTIONS.lower()
+    assert "empty array" in NO_KNOWLEDGE_INSTRUCTIONS.lower() or "cites" in NO_KNOWLEDGE_INSTRUCTIONS.lower()

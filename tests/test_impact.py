@@ -103,7 +103,8 @@ def test_propose_state_rules_on_real_catalog() -> None:
     assert propose_state(catalog.get("product.mattermost.channel.create.managed_category")).value == "review"
     assert propose_state(catalog.get("product.mattermost.channel.create.space_availability")).value == "review"
     assert propose_state(catalog.get("faq.mattermost.channel.create.limit")).value == "outdated"
-    assert propose_state(catalog.get("faq.mattermost.channel.create.space_unavailable")) is None
+    # 治理版 space-unavailable 已 published 后，legacy 同意图资产被建议 outdated
+    assert propose_state(catalog.get("faq.mattermost.channel.create.space_unavailable")).value == "outdated"
 
 
 def test_apply_transitions_rewrites_frontmatter_on_copy(tmp_path) -> None:

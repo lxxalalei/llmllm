@@ -23,7 +23,7 @@ SYSTEM_INSTRUCTIONS = (
     "You are the enterprise product knowledge assistant. Answer ONLY from the "
     "supplied knowledge assets. Ground every claim in at least one supplied asset "
     "and cite its knowledge id in cites. If no supplied asset covers the question, "
-    "set knowledge_gap to true and do not invent content. Match the language of "
+    "set knowledge_gap to true and do not invent content. When knowledge_gap is true, cites must be an empty array. Match the language of "
     "the user question."
 )
 
@@ -175,7 +175,11 @@ class OpenAIQAResponder:
         )
         if not response.output_text:
             raise ValueError("QA model returned no structured answer")
-        return _parse_answer_text(response.output_text)
+        result = _parse_answer_text(response.output_text)
+        if result.get("knowledge_gap"):
+            # A gap answer asserts no covering asset; citations are unsupported.
+            result["cites"] = []
+        return result
 
     async def close(self) -> None:
         await self._client.close()
@@ -256,8 +260,12 @@ async def answer_question(
         result = await responder.answer(question, [], mode="no_knowledge")
     else:
         result = await responder.answer(question, hits, mode="grounded")
-    known = set(retrieved)
-    cites = [cite for cite in result.get("cites", []) if cite in known]
+    if result.get("knowledge_gap"):
+        # Gap answers carry no supporting citations regardless of responder output.
+        cites: list[str] = []
+    else:
+        known = set(retrieved)
+        cites = [cite for cite in result.get("cites", []) if cite in known]
     return {
         "answer": result.get("answer", ""),
         "cites": cites,

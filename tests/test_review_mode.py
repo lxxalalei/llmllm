@@ -3,8 +3,23 @@
 from pathlib import Path
 
 from app.knowledge import KnowledgeCatalog, UserRole
+from app.knowledge.assets import KnowledgeCatalog as KC
+from app.knowledge.models import KnowledgeItem, KnowledgeLayer, KnowledgeStatus
 from app.knowledge.retrieval import retrieve
 from app.knowledge.vector_index import role_filter
+
+
+def _item(knowledge_id: str, status: KnowledgeStatus, layer: KnowledgeLayer, roles) -> KnowledgeItem:
+    return KnowledgeItem(
+        id=knowledge_id,
+        title="Channel permission",
+        layer=layer,
+        module="mattermost.channel",
+        feature="channel_permission",
+        content="Channel permission rule.",
+        status=status,
+        visible_roles=roles,
+    )
 
 
 def test_serve_retrieval_excludes_unpublished_for_every_role() -> None:
@@ -16,18 +31,18 @@ def test_serve_retrieval_excludes_unpublished_for_every_role() -> None:
     )
 
 
-def test_review_mode_retrieval_includes_review_assets() -> None:
-    catalog = KnowledgeCatalog.from_directory(Path("knowledge"))
-    hits = retrieve(
-        catalog,
-        "恢复已经归档的频道需要什么权限？",
-        UserRole.PRODUCT,
-        top_k=8,
-        review_mode=True,
+def test_review_mode_retrieval_includes_unpublished_assets_explicitly() -> None:
+    catalog = KC(
+        [
+            _item("product.published", KnowledgeStatus.PUBLISHED, KnowledgeLayer.L3_PRODUCT_LOGIC, [UserRole.PRODUCT]),
+            _item("product.review", KnowledgeStatus.REVIEW, KnowledgeLayer.L3_PRODUCT_LOGIC, [UserRole.PRODUCT]),
+        ]
     )
-    review_hits = [h.item.id for h in hits if h.item.status.value == "review"]
-    assert review_hits, "review mode must surface review assets (permission domain still in review)"
-    assert any("archive_restore" in hid for hid in review_hits)
+    serve_hits = retrieve(catalog, "Channel permission", UserRole.PRODUCT, top_k=10)
+    assert [h.item.id for h in serve_hits] == ["product.published"]
+
+    review_hits = retrieve(catalog, "Channel permission", UserRole.PRODUCT, top_k=10, review_mode=True)
+    assert {h.item.id for h in review_hits} == {"product.published", "product.review"}
 
 
 def test_dense_role_filter_serves_only_published_outside_review() -> None:
