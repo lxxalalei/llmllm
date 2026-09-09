@@ -3,7 +3,7 @@ id: eng.mattermost.channel.create.join_message
 layer: L1
 module: mattermost.channel
 feature: channel_creation
-status: draft
+status: published
 version: 1
 sources:
   - repo: mattermost/mattermost

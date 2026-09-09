@@ -3,7 +3,7 @@ id: faq.mattermost.channel.archive_restore.archive_permission_and_default
 layer: L4
 module: mattermost.channel
 feature: channel_archive_restore
-status: review
+status: published
 version: 1
 derived_from:
 - product.mattermost.channel.archive_restore.town_square_archive_rejected

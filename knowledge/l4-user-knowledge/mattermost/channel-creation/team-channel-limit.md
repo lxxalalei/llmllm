@@ -3,7 +3,7 @@ id: faq.mattermost.channel.creation.team_channel_limit
 layer: L4
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 derived_from:
 - product.mattermost.channel.creation.team_channel_limit

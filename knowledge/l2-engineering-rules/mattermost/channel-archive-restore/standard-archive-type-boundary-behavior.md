@@ -3,7 +3,7 @@ id: eng.mattermost.channel.archive_restore.standard_archive_type_boundary.behavi
 layer: L2
 module: mattermost.channel
 feature: channel_archive_restore
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.archive_restore.archive_permission_and_default.fact

@@ -3,7 +3,7 @@ id: product.mattermost.channel.archive_restore.restore_permission_and_guard
 layer: L3
 module: mattermost.channel
 feature: channel_archive_restore
-status: review
+status: published
 version: 1
 derived_from:
 - eng.mattermost.channel.archive_restore.restore_permission_and_guard.behavior

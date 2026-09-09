@@ -3,7 +3,7 @@ id: faq.mattermost.channel.create.space_unavailable
 layer: L4
 module: mattermost.channel
 feature: channel_creation
-status: draft
+status: published
 version: 1
 derived_from:
   - product.mattermost.channel.create.space_availability

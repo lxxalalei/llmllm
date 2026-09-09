@@ -3,7 +3,7 @@ id: eng.mattermost.channel.create.creator_membership_rule
 layer: L2
 module: mattermost.channel
 feature: channel_creation
-status: draft
+status: published
 version: 1
 derived_from:
   - eng.mattermost.channel.creation.creator_membership.fact

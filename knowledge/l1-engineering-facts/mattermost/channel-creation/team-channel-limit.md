@@ -3,7 +3,7 @@ id: eng.mattermost.channel.creation.team_channel_limit.fact
 layer: L1
 module: mattermost.channel
 feature: channel_creation
-status: review
+status: published
 version: 1
 sources:
 - repo: mattermost/mattermost
