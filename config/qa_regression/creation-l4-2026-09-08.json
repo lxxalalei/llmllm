@@ -1,0 +1,214 @@
+{
+  "module": "mattermost.channel",
+  "feature": "channel_creation",
+  "cases": [
+    {
+      "id": "creation_limit_reason",
+      "question": "为什么新增频道时显示已达上限？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.channel_limit",
+      "expected_gap": false,
+      "required_claims": [
+        "创建后团队频道数超过配置上限会拒绝创建",
+        "上限来自团队频道数量上限配置"
+      ],
+      "forbidden_claims": [
+        "给出当前团队的具体数量",
+        "归档后一定会释放额度"
+      ]
+    },
+    {
+      "id": "creation_limit_continue",
+      "question": "团队已经有很多频道时还能不能继续创建？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.channel_limit",
+      "expected_gap": false,
+      "required_claims": [
+        "需要检查创建后的团队频道数量",
+        "超过频道数量上限时创建被拒绝"
+      ],
+      "forbidden_claims": [
+        "频道数量没有上限",
+        "只要有创建权限就一定能继续创建"
+      ]
+    },
+    {
+      "id": "creation_limit_value_gap",
+      "question": "我们团队的频道上限具体是多少？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.channel_limit",
+      "expected_gap": true,
+      "required_claims": [
+        "候选 Rule 没有提供当前团队的具体数值",
+        "答案应拒绝从知识中猜出数值"
+      ],
+      "forbidden_claims": [
+        "固定为 100",
+        "具体数值就是答案中的某个数字"
+      ]
+    },
+    {
+      "id": "creation_limit_settings_entry_gap",
+      "question": "在哪里查看或修改团队频道数量上限设置？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.channel_limit",
+      "expected_gap": true,
+      "required_claims": [
+        "候选知识没有提供设置入口",
+        "说明缺少设置操作信息，无法确定入口"
+      ],
+      "forbidden_claims": [
+        "设置菜单路径是某个未被证明的入口",
+        "可以直接联系管理员完成修改"
+      ]
+    },
+    {
+      "id": "creation_limit_archive_gap",
+      "question": "归档频道后会不会释放可创建的频道数量？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.channel_limit",
+      "expected_gap": true,
+      "required_claims": [
+        "现有 Rule 没有证明归档是否计入数量",
+        "答案不能保证归档会释放额度"
+      ],
+      "forbidden_claims": [
+        "归档后就能继续创建",
+        "清理频道一定会释放数量额度"
+      ]
+    },
+    {
+      "id": "creation_permission_split",
+      "question": "为什么有公开频道权限却创建不了私有频道？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.create_permission_gate",
+      "expected_gap": false,
+      "required_claims": [
+        "公开频道检查 create_public_channel",
+        "私有频道检查 create_private_channel",
+        "拥有一种权限不代表拥有另一种"
+      ],
+      "forbidden_claims": [
+        "两种频道共用同一创建权限",
+        "有公开权限就一定能创建私有频道"
+      ]
+    },
+    {
+      "id": "creation_private_permission_name",
+      "question": "创建私有频道要检查哪个权限？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.create_permission_gate",
+      "expected_gap": false,
+      "required_claims": [
+        "目标是私有频道",
+        "需要 create_private_channel",
+        "请求者需要已登录"
+      ],
+      "forbidden_claims": [
+        "create_public_channel 是私有频道的唯一权限"
+      ]
+    },
+    {
+      "id": "creation_creator_admin",
+      "question": "我创建的团队频道为什么自动把我设为管理员？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.creator_membership",
+      "expected_gap": false,
+      "required_claims": [
+        "标准团队频道创建成功后创建者成为成员",
+        "成员关系记录创建者为 SchemeAdmin 或频道管理员"
+      ],
+      "forbidden_claims": [
+        "创建者必须手动邀请自己",
+        "创建失败也会建立成员关系"
+      ]
+    },
+    {
+      "id": "creation_creator_failure",
+      "question": "创建失败时我会先成为频道成员吗？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.creator_membership",
+      "expected_gap": true,
+      "required_claims": [
+        "知识只描述创建成功后的成员关系，未覆盖各阶段失败和回滚",
+        "不能从成功路径反推失败后必然存在或必然不存在成员关系"
+      ],
+      "forbidden_claims": [
+        "创建失败后一定也会自动加入频道",
+        "创建失败一定不会留下成员关系"
+      ]
+    },
+    {
+      "id": "creation_sidebar_category",
+      "question": "创建成功后新频道为什么出现在我的默认频道分类？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.creation_side_effects",
+      "expected_gap": false,
+      "required_claims": [
+        "系统会把新频道加入创建者的默认频道分类",
+        "这是创建完成后的流程副作用"
+      ],
+      "forbidden_claims": [
+        "这是用户手动拖入分类的结果"
+      ]
+    },
+    {
+      "id": "creation_join_message",
+      "question": "新频道里的加入提示是系统自动发的吗？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.creation_side_effects",
+      "expected_gap": false,
+      "required_claims": [
+        "标准创建会发布加入频道的系统提示",
+        "该提示属于创建完成后的副作用"
+      ],
+      "forbidden_claims": [
+        "用户必须手动发送加入提示"
+      ]
+    },
+    {
+      "id": "creation_client_event",
+      "question": "为什么创建完成后客户端马上出现新频道状态？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.creation_side_effects",
+      "expected_gap": false,
+      "required_claims": [
+        "创建完成后会向创建者客户端发送新频道事件"
+      ],
+      "forbidden_claims": [
+        "创建只改变数据库记录而不会通知客户端"
+      ]
+    },
+    {
+      "id": "creation_discoverable_conditions",
+      "question": "创建可发现的私有频道有哪些前提条件？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.discoverable_private_creation",
+      "expected_gap": false,
+      "required_claims": [
+        "目标必须是私有频道",
+        "系统必须启用 discoverable_channels",
+        "创建者必须有 manage_private_channel_discoverability 权限"
+      ],
+      "forbidden_claims": [
+        "公开频道也能通过该规则创建为可发现",
+        "只要是管理员就一定满足该权限条件"
+      ]
+    },
+    {
+      "id": "creation_discoverable_feature_gate",
+      "question": "为什么我有管理权限但可发现私有频道仍然创建失败？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.discoverable_private_creation",
+      "expected_gap": false,
+      "required_claims": [
+        "权限不是唯一条件",
+        "系统还必须启用 discoverable_channels",
+        "目标必须是私有频道"
+      ],
+      "forbidden_claims": [
+        "有管理权限就一定可以创建",
+        "公开频道可以使用同一可发现创建条件"
+      ]
+    },
+    {
+      "id": "creation_discoverable_ui_entry_gap",
+      "question": "在哪里打开 discoverable_channels 功能？",
+      "expected_knowledge_id": "faq.mattermost.channel.creation.discoverable_private_creation",
+      "expected_gap": true,
+      "required_claims": [
+        "候选知识只说明启用条件，没有提供界面入口",
+        "答案应拒绝推断具体设置路径"
+      ],
+      "forbidden_claims": [
+        "给出未被 Rule 支撑的设置菜单路径"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "module": "mattermost.channel",
+  "feature": "channel_creation",
+  "intents": [
+    {
+      "id": "faq.mattermost.channel.creation.channel_limit",
+      "question": "创建频道时提示数量已达上限，是什么意思？",
+      "question_variants": [
+        "为什么我不能继续创建频道？",
+        "团队频道数量上限由什么决定？",
+        "为什么创建频道时提示频道数量已达上限？"
+      ],
+      "candidate_rule_ids": [
+        "rule.mattermost.channel.creation.team_channel_limit"
+      ],
+      "existing_knowledge_ids": [
+        "faq.mattermost.channel.create.channel_limit_source",
+        "faq.mattermost.channel.create.limit",
+        "faq.mattermost.channel.creation.team_channel_limit"
+      ]
+    },
+    {
+      "id": "faq.mattermost.channel.creation.create_permission_gate",
+      "question": "为什么我能创建公开频道，却不能创建私有频道？",
+      "question_variants": [
+        "公开频道和私有频道的创建权限一样吗？",
+        "创建公开和私有频道分别需要什么权限？",
+        "有公开频道创建权限就能创建私有频道吗？"
+      ],
+      "candidate_rule_ids": [
+        "rule.mattermost.channel.creation.create_open_permission",
+        "rule.mattermost.channel.creation.create_private_permission"
+      ],
+      "existing_knowledge_ids": [
+        "faq.mattermost.channel.creation.create_permission_gate",
+        "faq.mattermost.channel.create.public_private_channels"
+      ]
+    },
+    {
+      "id": "faq.mattermost.channel.creation.creator_membership",
+      "question": "创建频道后，我会自动成为成员和管理员吗？",
+      "question_variants": [
+        "新建团队频道后创建者会自动加入吗？",
+        "创建者创建频道后拥有什么身份？",
+        "为什么创建频道的人会直接成为频道管理员？"
+      ],
+      "candidate_rule_ids": [
+        "rule.mattermost.channel.creation.creator_membership"
+      ],
+      "existing_knowledge_ids": [
+        "faq.mattermost.channel.creation.creator_membership",
+        "faq.mattermost.channel.create.creator_auto_join"
+      ]
+    },
+    {
+      "id": "faq.mattermost.channel.creation.creation_side_effects",
+      "question": "为什么新建频道会出现在侧边栏，并出现加入频道消息？",
+      "question_variants": [
+        "新建频道为什么出现在我的默认频道分类？",
+        "为什么创建成功后会显示加入频道的系统消息？",
+        "创建频道会触发哪些创建后的界面变化？"
+      ],
+      "candidate_rule_ids": [
+        "rule.mattermost.channel.creation.creation_side_effects"
+      ],
+      "existing_knowledge_ids": [
+        "faq.mattermost.channel.creation.creation_side_effects",
+        "faq.mattermost.channel.create.default_category",
+        "faq.mattermost.channel.create.join_message"
+      ]
+    },
+    {
+      "id": "faq.mattermost.channel.creation.discoverable_private_creation",
+      "question": "创建可发现的私有频道需要满足什么条件？",
+      "question_variants": [
+        "为什么新建私有频道时不能启用可发现？",
+        "谁可以创建可发现私有频道？",
+        "可发现私有频道创建失败要检查哪些条件？"
+      ],
+      "candidate_rule_ids": [
+        "rule.mattermost.channel.creation.discoverable_private_creation"
+      ],
+      "existing_knowledge_ids": [
+        "faq.mattermost.channel.creation.discoverable_private_creation"
+      ]
+    }
+  ]
+}

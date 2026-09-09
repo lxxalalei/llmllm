@@ -94,7 +94,7 @@ Channel
 - Go/Python Repository Inventory 与多文件、多 symbol Batch Compiler；
 - OpenAI-compatible Structured Outputs `Code → L1`；
 - `L1 → BehaviorRule` 结构化规则生成；
-- `BehaviorRule → L2/L3/L4` 三种角色视图投影；
+- `BehaviorRule → L2/L3` 角色视图投影，以及独立的 [L4 用户意图编写与验收入口](docs/l4-user-intents.md)；
 - 五个 Channel Feature scope；
 - Channel 域 manifest 与域级覆盖率汇总；
 - `scripts/compile_domain.py` 一条命令编译完整 Channel 域；

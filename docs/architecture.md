@@ -112,6 +112,12 @@ Direct/Group 普通加人入口拒绝
 
 其他 Rule 如果暂时没有真实用户意图，可以没有 L4。
 
+当前独立入口 `scripts/compile_l4.py` 读取意图清单和 canonical Rule，执行 `plan → write → review`，输出 JSON 草稿预览。意图规划支持 `create / merge / gap`。领域代码验证 Rule/L1/L3 的范围、已审核证据、稳定 ID 和合并冲突；模型只选择给定 Rule 并撰写正文，不能决定 L4 层级、权限、血缘或发布状态。写作与审核共享运行时加载的 [规范](../app/llm/prompts/l4_authoring.md)。
+
+`question_variants` 随 Markdown metadata 保存，与标题、正文共同参与本地 BM25 和向量 embedding 输入。它们共用一个知识 ID，引用仍指向该知识。已有向量索引只有在后续正常同步后才会使用新问法。
+
+`scripts/evaluate_l4.py` 在内存中模拟候选替换，使用普通用户的正常检索策略；不写 canonical，不连接数据库。可选择真实 QA responder，但检索命中和自动引用检查均不等于答案语义验收。详见 [使用流程](l4-user-intents.md)。此入口独立于现有 LangGraph skeleton 和 scope compiler，未自动接入全域编译。
+
 ### SourceBinding
 
 SourceBinding 的职责是“能回到真实源码核对”，不是构建代码变更追踪系统。
@@ -231,7 +237,7 @@ Channel
 └─ Archive / Restore
 ```
 
-第一版基线已经完成源码语义核查和 Coverage 记录，但此前曾出现“尚未经过真实 QA 就批量 Published”的发布错误。当前治理阶段已将这批新基线恢复为 `review`，正常 Serve 继续只消费 Published 资产。
+第一版基线已经完成源码语义核查和 Coverage 记录，但此前曾出现“尚未经过真实 QA 就批量 Published”的发布错误。历史上曾回退到 `review`；截至本轮核查，Creation、Membership、Permission、Update 中已有 Published 资产，不能再把“全部 review”当作当前事实。文件状态不代表已完成真实 QA，参见 [当前覆盖和缺口](baselines/channel-coverage-vs-gap-2026-09-08.md)。正常 Serve 只消费 Published 资产。
 
 同时已经开始修正一一对应模型：BehaviorRule 自动投影只生成 L2/L3；L4 改为用户意图资产并支持多个 `behavior_rule_ids`。Membership 的 `add_permission_split` 已作为第一处样例从一条过粗 Rule 拆成四条原子 Rule，并用其中两条共同支撑一条 FAQ。
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-本文件是项目路线、状态和下一验收项的唯一索引。产品范围以 [PRD](PRD.md) 为准，架构边界以 [Architecture](architecture.md) 为准，当前实施细节以 [Mattermost 规模的成熟产品存量知识建库](plans/mattermost-scale-knowledge-bootstrap.md) 为准。
+本文件是项目路线、状态和下一验收项的唯一索引。产品范围以 [PRD](PRD.md) 为准，架构边界以 [Architecture](architecture.md) 为准；[成熟产品存量知识建库](plans/mattermost-scale-knowledge-bootstrap.md) 提供背景，本轮实施入口见下文。历史计划中的状态不能覆盖代码和实际资产。
 
 路线状态只使用：`pending`、`in_progress`、`blocked`、`completed`、`superseded`。
 
@@ -11,6 +11,7 @@
 - 当前样板：`mattermost/mattermost`
 - 当前业务域：完整 `Channel`
 - 当前目标：把第一版 Channel 基线治理成真正可 QA、可逐 Feature 发布的知识库。
+- 最近完成：[Creation L4 用户意图试点](plans/archive/creation-l4-user-intents.md)，已交付规范、草稿入口和离线验收；[使用说明与流程图](l4-user-intents.md)。
 
 当前语义关系：
 
@@ -50,12 +51,13 @@ Channel
 - 第一版完整 Channel 主域源码语义核查；
 - 第一版 Channel Coverage：20 个核心 L1、20 个初始 BehaviorRule 及对应角色知识；
 - 已记录 ABAC membership policy、Join Request、Permanent Delete、Shared Channel remote sync 等明确 Knowledge Gap；
-- 已发现并纠正一次错误的“82 个 review 资产整批 Published”；新 Channel 基线恢复为 `review`；
+- 已发现并纠正过一次错误的“82 个 review 资产整批 Published”；历史上曾恢复为 `review`。目前部分 Creation、Membership、Permission、Update 资产已 Published，状态以文件为准，不能据此认定真实 QA 已通过；
 - 正常 Serve 与 Review 模式分离：正常检索只消费 Published；
 - BehaviorRule 自动投影改为 L2/L3，不再强制生成 L4；
 - L4 支持 `behavior_rule_ids`，可以组合多个 Rule；
 - Membership `add_permission_split` 已从 1 条粗 Rule 拆成 4 条原子 Rule，并由其中 2 条共同支撑 1 条用户 FAQ；
 - 已开始清理旧 Creation 正文中的发布日期/审核备注和错误重复知识。
+- 已实现独立 L4 意图编写入口：运行时规范、plan/write/review、create/merge/gap、草稿与证据边界；同义问法进入同一知识的 BM25/embedding 输入。Creation 五条参考候选仅保存在 preview，未迁移正式资产。
 
 ### 当前未完成
 
@@ -69,9 +71,11 @@ Channel
 
 ### 下一验收项
 
-不是继续扩框架，也不是再次跑出一批数量整齐的 L1/L2/L3/L4。
+Creation 试点已完成 81 项相关测试及离线 15/15 top-4 召回，13 题排名第一。五条参考候选保持草稿，未修改 canonical 资产；真实模型问答执行数为 0，5 道缺口题的拒答仍需验证。证据见 [审阅报告](baselines/creation-l4-review-2026-09-08.md)。
 
-下一验收项是：
+下一轮规划检查点：当前无下一轮计划。候选方向包括真实模型生成与 QA、补齐操作和运行时配置证据、扩展其他 Feature、正式迁移旧知识，待确定范围和优先级再建立有界计划。任何发布仍须先完成真实 QA，不以离线召回或已有 Published 状态替代。
+
+Channel 主路线保留以下验收顺序：
 
 ```text
 Channel Rule Audit

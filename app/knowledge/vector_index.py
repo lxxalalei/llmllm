@@ -25,7 +25,7 @@ def _point_uuid(knowledge_id: str) -> uuid.UUID:
 
 
 def _text_for(item: KnowledgeItem) -> str:
-    return f"{item.title}\n{item.content}"
+    return item.search_text
 
 
 def _payload(item: KnowledgeItem) -> dict[str, object]:

@@ -15,7 +15,7 @@ class RetrievalHit:
 
 
 def _text_of(item: KnowledgeItem) -> str:
-    return f"{item.title}\n{item.content}"
+    return item.search_text
 
 
 def retrieve(

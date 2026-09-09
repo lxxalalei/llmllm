@@ -50,6 +50,7 @@ class SourceBinding(BaseModel):
 class KnowledgeItem(BaseModel):
     id: str = Field(description="Stable knowledge identifier.")
     title: str
+    question_variants: list[str] = Field(default_factory=list)
     layer: KnowledgeLayer
     module: str
     feature: str | None = None
@@ -67,6 +68,10 @@ class KnowledgeItem(BaseModel):
     visible_roles: list[UserRole] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @property
+    def search_text(self) -> str:
+        return "\n".join([self.title, self.content, *self.question_variants])
 
     @property
     def linked_behavior_rule_ids(self) -> list[str]:

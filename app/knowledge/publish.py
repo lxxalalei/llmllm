@@ -68,6 +68,8 @@ def _frontmatter(item: KnowledgeItem) -> dict[str, object]:
         ]
     if item.tags:
         metadata["tags"] = list(item.tags)
+    if item.question_variants:
+        metadata["question_variants"] = list(item.question_variants)
     if item.visible_roles:
         metadata["visible_roles"] = [role.value for role in item.visible_roles]
     return metadata

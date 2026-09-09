@@ -1,0 +1,368 @@
+{
+  "module": "mattermost.channel",
+  "feature": "channel_creation",
+  "candidates": [
+    {
+      "intent": {
+        "id": "faq.mattermost.channel.creation.channel_limit",
+        "question": "创建频道时提示数量已达上限，是什么意思？",
+        "question_variants": [
+          "为什么我不能继续创建频道？",
+          "团队频道数量上限由什么决定？",
+          "为什么创建频道时提示频道数量已达上限？"
+        ],
+        "candidate_rule_ids": [
+          "rule.mattermost.channel.creation.team_channel_limit"
+        ],
+        "existing_knowledge_ids": [
+          "faq.mattermost.channel.create.channel_limit_source",
+          "faq.mattermost.channel.create.limit",
+          "faq.mattermost.channel.creation.team_channel_limit"
+        ]
+      },
+      "plan": {
+        "action": "merge",
+        "rule_ids": [
+          "rule.mattermost.channel.creation.team_channel_limit"
+        ],
+        "merge_ids": [
+          "faq.mattermost.channel.create.channel_limit_source",
+          "faq.mattermost.channel.create.limit",
+          "faq.mattermost.channel.creation.team_channel_limit"
+        ],
+        "rationale": "把三个重复的上限问法收敛为一个能解释阻断条件和配置来源的用户意图；数值、设置入口和额度释放方式没有被当前 Rule 支撑。",
+        "missing_evidence": [
+          "当前 Rule 未提供具体频道数量上限值。",
+          "当前 Rule 未提供查看或修改上限的界面入口。",
+          "当前 Rule 未证明归档或删除频道是否会释放数量额度。"
+        ]
+      },
+      "item": {
+        "id": "faq.mattermost.channel.creation.channel_limit",
+        "title": "创建频道时提示数量已达上限，是什么意思？",
+        "question_variants": [
+          "为什么我不能继续创建频道？",
+          "团队频道数量上限由什么决定？",
+          "为什么创建频道时提示频道数量已达上限？"
+        ],
+        "layer": "L4",
+        "module": "mattermost.channel",
+        "feature": "channel_creation",
+        "content": "创建新频道前，系统会检查创建后的团队频道数量。如果新增后超过团队的频道数量上限，创建会被拒绝并返回频道数量上限错误。这个上限来自团队的频道数量上限配置。",
+        "status": "draft",
+        "version": 1,
+        "derived_from": [
+          "product.mattermost.channel.creation.team_channel_limit"
+        ],
+        "behavior_rule_ids": [
+          "rule.mattermost.channel.creation.team_channel_limit"
+        ],
+        "visible_roles": [
+          "user",
+          "product",
+          "test",
+          "developer",
+          "admin"
+        ],
+        "tags": [
+          "mattermost",
+          "channel",
+          "channel_creation",
+          "limit"
+        ]
+      },
+      "review": {
+        "issues": [],
+        "missing_evidence": [
+          "当前 Rule 未提供具体频道数量上限值。",
+          "当前 Rule 未提供查看或修改上限的界面入口。",
+          "当前 Rule 未证明归档或删除频道是否会释放数量额度。"
+        ]
+      }
+    },
+    {
+      "intent": {
+        "id": "faq.mattermost.channel.creation.create_permission_gate",
+        "question": "为什么我能创建公开频道，却不能创建私有频道？",
+        "question_variants": [
+          "公开频道和私有频道的创建权限一样吗？",
+          "创建公开和私有频道分别需要什么权限？",
+          "有公开频道创建权限就能创建私有频道吗？"
+        ],
+        "candidate_rule_ids": [
+          "rule.mattermost.channel.creation.create_open_permission",
+          "rule.mattermost.channel.creation.create_private_permission"
+        ],
+        "existing_knowledge_ids": [
+          "faq.mattermost.channel.creation.create_permission_gate",
+          "faq.mattermost.channel.create.public_private_channels"
+        ]
+      },
+      "plan": {
+        "action": "merge",
+        "rule_ids": [
+          "rule.mattermost.channel.creation.create_open_permission",
+          "rule.mattermost.channel.creation.create_private_permission"
+        ],
+        "merge_ids": [
+          "faq.mattermost.channel.creation.create_permission_gate",
+          "faq.mattermost.channel.create.public_private_channels"
+        ],
+        "rationale": "保留公开与私有频道各自的权限门禁，合并已有两种表达，避免把一种创建权限泛化为另一种。",
+        "missing_evidence": []
+      },
+      "item": {
+        "id": "faq.mattermost.channel.creation.create_permission_gate",
+        "title": "为什么我能创建公开频道，却不能创建私有频道？",
+        "question_variants": [
+          "公开频道和私有频道的创建权限一样吗？",
+          "创建公开和私有频道分别需要什么权限？",
+          "有公开频道创建权限就能创建私有频道吗？"
+        ],
+        "layer": "L4",
+        "module": "mattermost.channel",
+        "feature": "channel_creation",
+        "content": "公开频道和私有频道分别检查 `create_public_channel` 与 `create_private_channel` 权限。只有已登录且对应频道类型的权限检查通过，标准创建才会被允许；拥有其中一种权限，不代表自动拥有另一种。",
+        "status": "draft",
+        "version": 1,
+        "derived_from": [
+          "product.mattermost.channel.creation.create_open_permission",
+          "product.mattermost.channel.creation.create_private_permission"
+        ],
+        "behavior_rule_ids": [
+          "rule.mattermost.channel.creation.create_open_permission",
+          "rule.mattermost.channel.creation.create_private_permission"
+        ],
+        "visible_roles": [
+          "user",
+          "product",
+          "test",
+          "developer",
+          "admin"
+        ],
+        "tags": [
+          "mattermost",
+          "channel",
+          "channel_creation",
+          "permission"
+        ]
+      },
+      "review": {
+        "issues": [],
+        "missing_evidence": []
+      }
+    },
+    {
+      "intent": {
+        "id": "faq.mattermost.channel.creation.creator_membership",
+        "question": "创建频道后，我会自动成为成员和管理员吗？",
+        "question_variants": [
+          "新建团队频道后创建者会自动加入吗？",
+          "创建者创建频道后拥有什么身份？",
+          "为什么创建频道的人会直接成为频道管理员？"
+        ],
+        "candidate_rule_ids": [
+          "rule.mattermost.channel.creation.creator_membership"
+        ],
+        "existing_knowledge_ids": [
+          "faq.mattermost.channel.creation.creator_membership",
+          "faq.mattermost.channel.create.creator_auto_join"
+        ]
+      },
+      "plan": {
+        "action": "merge",
+        "rule_ids": [
+          "rule.mattermost.channel.creation.creator_membership"
+        ],
+        "merge_ids": [
+          "faq.mattermost.channel.creation.creator_membership",
+          "faq.mattermost.channel.create.creator_auto_join"
+        ],
+        "rationale": "把自动加入和创建者管理员身份合并为一个创建结果意图，解释成功路径；不推断失败路径或回滚行为。",
+        "missing_evidence": [
+          "现有 Rule 未提供各阶段失败和回滚行为，无法保证创建失败后一定存在或一定不存在成员关系。"
+        ]
+      },
+      "item": {
+        "id": "faq.mattermost.channel.creation.creator_membership",
+        "title": "创建频道后，我会自动成为成员和管理员吗？",
+        "question_variants": [
+          "新建团队频道后创建者会自动加入吗？",
+          "创建者创建频道后拥有什么身份？",
+          "为什么创建频道的人会直接成为频道管理员？"
+        ],
+        "layer": "L4",
+        "module": "mattermost.channel",
+        "feature": "channel_creation",
+        "content": "标准团队频道创建成功后，创建者会成为该频道的成员，并在成员关系中记录为频道管理员（SchemeAdmin）。因此，创建者的自动加入和管理员身份都是创建成功时建立的结果。",
+        "status": "draft",
+        "version": 1,
+        "derived_from": [
+          "product.mattermost.channel.creation.creator_membership"
+        ],
+        "behavior_rule_ids": [
+          "rule.mattermost.channel.creation.creator_membership"
+        ],
+        "visible_roles": [
+          "user",
+          "product",
+          "test",
+          "developer",
+          "admin"
+        ],
+        "tags": [
+          "mattermost",
+          "channel",
+          "channel_creation",
+          "membership"
+        ]
+      },
+      "review": {
+        "issues": [],
+        "missing_evidence": [
+          "现有 Rule 未提供各阶段失败和回滚行为，无法保证创建失败后一定存在或一定不存在成员关系。"
+        ]
+      }
+    },
+    {
+      "intent": {
+        "id": "faq.mattermost.channel.creation.creation_side_effects",
+        "question": "为什么新建频道会出现在侧边栏，并出现加入频道消息？",
+        "question_variants": [
+          "新建频道为什么出现在我的默认频道分类？",
+          "为什么创建成功后会显示加入频道的系统消息？",
+          "创建频道会触发哪些创建后的界面变化？"
+        ],
+        "candidate_rule_ids": [
+          "rule.mattermost.channel.creation.creation_side_effects"
+        ],
+        "existing_knowledge_ids": [
+          "faq.mattermost.channel.creation.creation_side_effects",
+          "faq.mattermost.channel.create.default_category",
+          "faq.mattermost.channel.create.join_message"
+        ]
+      },
+      "plan": {
+        "action": "merge",
+        "rule_ids": [
+          "rule.mattermost.channel.creation.creation_side_effects"
+        ],
+        "merge_ids": [
+          "faq.mattermost.channel.creation.creation_side_effects",
+          "faq.mattermost.channel.create.default_category",
+          "faq.mattermost.channel.create.join_message"
+        ],
+        "rationale": "把默认频道分类、加入提示和客户端新频道状态合并为一个创建后副作用意图，避免三条原子 FAQ 分散检索结果。",
+        "missing_evidence": []
+      },
+      "item": {
+        "id": "faq.mattermost.channel.creation.creation_side_effects",
+        "title": "为什么新建频道会出现在侧边栏，并出现加入频道消息？",
+        "question_variants": [
+          "新建频道为什么出现在我的默认频道分类？",
+          "为什么创建成功后会显示加入频道的系统消息？",
+          "创建频道会触发哪些创建后的界面变化？"
+        ],
+        "layer": "L4",
+        "module": "mattermost.channel",
+        "feature": "channel_creation",
+        "content": "标准频道创建完成后，系统会把频道加入创建者的默认频道分类，发布加入频道的系统提示，并向客户端发送新频道事件。这些变化属于创建成功后的流程。",
+        "status": "draft",
+        "version": 1,
+        "derived_from": [
+          "product.mattermost.channel.creation.creation_side_effects"
+        ],
+        "behavior_rule_ids": [
+          "rule.mattermost.channel.creation.creation_side_effects"
+        ],
+        "visible_roles": [
+          "user",
+          "product",
+          "test",
+          "developer",
+          "admin"
+        ],
+        "tags": [
+          "mattermost",
+          "channel",
+          "channel_creation",
+          "side_effects"
+        ]
+      },
+      "review": {
+        "issues": [],
+        "missing_evidence": []
+      }
+    },
+    {
+      "intent": {
+        "id": "faq.mattermost.channel.creation.discoverable_private_creation",
+        "question": "创建可发现的私有频道需要满足什么条件？",
+        "question_variants": [
+          "为什么新建私有频道时不能启用可发现？",
+          "谁可以创建可发现私有频道？",
+          "可发现私有频道创建失败要检查哪些条件？"
+        ],
+        "candidate_rule_ids": [
+          "rule.mattermost.channel.creation.discoverable_private_creation"
+        ],
+        "existing_knowledge_ids": [
+          "faq.mattermost.channel.creation.discoverable_private_creation"
+        ]
+      },
+      "plan": {
+        "action": "merge",
+        "rule_ids": [
+          "rule.mattermost.channel.creation.discoverable_private_creation"
+        ],
+        "merge_ids": [
+          "faq.mattermost.channel.creation.discoverable_private_creation"
+        ],
+        "rationale": "已有同主题条目；本预览保留单一可发现私有频道意图，并明确三项必要条件。",
+        "missing_evidence": [
+          "当前 Rule 未提供启用 discoverable_channels 的界面入口。"
+        ]
+      },
+      "item": {
+        "id": "faq.mattermost.channel.creation.discoverable_private_creation",
+        "title": "创建可发现的私有频道需要满足什么条件？",
+        "question_variants": [
+          "为什么新建私有频道时不能启用可发现？",
+          "谁可以创建可发现私有频道？",
+          "可发现私有频道创建失败要检查哪些条件？"
+        ],
+        "layer": "L4",
+        "module": "mattermost.channel",
+        "feature": "channel_creation",
+        "content": "可发现创建只适用于私有频道。系统必须启用 `discoverable_channels`，且创建者必须具备 `manage_private_channel_discoverability` 权限；这三项是可发现创建的额外必要检查，满足它们不代表其他频道创建条件都已通过。",
+        "status": "draft",
+        "version": 1,
+        "derived_from": [
+          "product.mattermost.channel.creation.discoverable_private_creation"
+        ],
+        "behavior_rule_ids": [
+          "rule.mattermost.channel.creation.discoverable_private_creation"
+        ],
+        "visible_roles": [
+          "user",
+          "product",
+          "test",
+          "developer",
+          "admin"
+        ],
+        "tags": [
+          "mattermost",
+          "channel",
+          "channel_creation",
+          "discoverability"
+        ]
+      },
+      "review": {
+        "issues": [],
+        "missing_evidence": [
+          "当前 Rule 未提供启用 discoverable_channels 的界面入口。"
+        ]
+      }
+    }
+  ]
+}

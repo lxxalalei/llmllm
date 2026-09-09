@@ -8,6 +8,7 @@
 | [Phase 2 检索与问答](phase2-retrieval-qa.md) | `completed` | 角色化 grounded QA、混合检索、Analytics 和 Knowledge Gap 闭环已完成 |
 | [Phase 3 增量知识编译](phase3-incremental-compile.md) | `superseded` | 代码级维护能力已交付；真实外部整链验收作为 roadmap 中的维护债务保留 |
 | [Knowledge Expansion — 规模化知识构建](knowledge-expansion.md) | `superseded` | Batch Compiler 能力已交付；未完成的语义质量目标并入成熟产品存量知识建库计划 |
+| [Creation L4 用户意图试点](creation-l4-user-intents.md) | `completed` | 运行时规范、三阶段草稿生成、同义检索、五条参考候选与离线 top-4 召回通过；真实模型 QA 和发布未执行 |
 
 归档规则：
 
